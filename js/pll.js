@@ -54,7 +54,15 @@ const PllCalc = {
     const configs = [];
     const maxConfigs = 50; // Limit results
 
+    // PFD frequency limits (typical for most PLLs)
+    const pfdMin = 10;   // MHz - minimum PFD frequency
+    const pfdMax = 450;  // MHz - maximum PFD frequency
+
     for (let d = 1; d <= dMax && configs.length < maxConfigs; d++) {
+      // Check PFD frequency (f_in / D)
+      const fPfd = fIn / d;
+      const pfdValid = fPfd >= pfdMin && fPfd <= pfdMax;
+
       for (let m = 1; m <= mMax && configs.length < maxConfigs; m++) {
         const fVco = fIn * m / d;
 
@@ -72,9 +80,11 @@ const PllCalc = {
               d: d,
               o: o,
               fVco: fVco,
+              fPfd: fPfd,
               fOut: fOut,
               errorPpm: errorPpm,
-              exact: errorPpm < 0.1
+              exact: errorPpm < 0.1,
+              pfdValid: pfdValid
             });
           }
         }
@@ -100,22 +110,27 @@ const PllCalc = {
             <th>M</th>
             <th>D</th>
             <th>O</th>
-            <th>VCO (MHz)</th>
-            <th>Output (MHz)</th>
-            <th>Error (ppm)</th>
+            <th>PFD</th>
+            <th>VCO</th>
+            <th>Output</th>
+            <th>Error</th>
           </tr>
         </thead>
         <tbody>
     `;
 
     topConfigs.forEach(cfg => {
-      const exactClass = cfg.exact ? ' class="exact"' : '';
+      let rowClass = cfg.exact ? 'exact' : '';
+      if (!cfg.pfdValid) rowClass += ' pfd-warning';
+      const classAttr = rowClass ? ` class="${rowClass.trim()}"` : '';
+      const pfdWarning = cfg.pfdValid ? '' : ' *';
       html += `
-        <tr${exactClass}>
+        <tr${classAttr}>
           <td>${cfg.m}</td>
           <td>${cfg.d}</td>
           <td>${cfg.o}</td>
-          <td>${cfg.fVco.toFixed(2)}</td>
+          <td>${cfg.fPfd.toFixed(1)}${pfdWarning}</td>
+          <td>${cfg.fVco.toFixed(1)}</td>
           <td>${cfg.fOut.toFixed(4)}</td>
           <td>${cfg.errorPpm < 0.1 ? 'exact' : cfg.errorPpm.toFixed(1)}</td>
         </tr>
@@ -123,6 +138,12 @@ const PllCalc = {
     });
 
     html += '</tbody></table>';
+
+    // Add PFD warning note if any configs have invalid PFD
+    const hasInvalidPfd = topConfigs.some(c => !c.pfdValid);
+    if (hasInvalidPfd) {
+      html += `<p class="pfd-note">* PFD outside typical 10-450 MHz range</p>`;
+    }
 
     if (configs.length > 15) {
       html += `<p style="margin-top: 0.5rem; opacity: 0.6;">Showing 15 of ${configs.length} valid configurations</p>`;

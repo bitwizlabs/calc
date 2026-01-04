@@ -1,102 +1,102 @@
 // Device presets for Xilinx and Intel FPGAs
 
 const DevicePresets = {
-  // CDC MTBF parameters
+  // CDC MTBF parameters (typical speed grade estimates)
   cdc: {
     'xilinx-7series': {
-      name: 'Xilinx 7-Series',
+      name: 'Xilinx 7-Series (-1)',
       twindow: 40,    // ps
       tau: 18,        // ps
       tsetup: 0.06    // ns
     },
     'xilinx-ultrascale': {
-      name: 'Xilinx UltraScale',
+      name: 'Xilinx UltraScale (-1)',
       twindow: 35,
       tau: 12,
       tsetup: 0.04
     },
     'xilinx-ultrascale+': {
-      name: 'Xilinx UltraScale+',
+      name: 'Xilinx UltraScale+ (-1)',
       twindow: 30,
       tau: 10,
       tsetup: 0.035
     },
     'intel-cyclone-v': {
-      name: 'Intel Cyclone V',
+      name: 'Intel Cyclone V (C7)',
       twindow: 55,
       tau: 22,
       tsetup: 0.08
     },
     'intel-cyclone-10': {
-      name: 'Intel Cyclone 10',
+      name: 'Intel Cyclone 10 (C8)',
       twindow: 50,
       tau: 20,
       tsetup: 0.07
     },
     'intel-arria-10': {
-      name: 'Intel Arria 10',
+      name: 'Intel Arria 10 (-1)',
       twindow: 40,
       tau: 15,
       tsetup: 0.05
     },
     'intel-stratix-10': {
-      name: 'Intel Stratix 10',
+      name: 'Intel Stratix 10 (-1)',
       twindow: 35,
       tau: 12,
       tsetup: 0.04
     }
   },
 
-  // Timing budget parameters
+  // Timing budget parameters (typical speed grade, includes routing estimates)
   timing: {
     'xilinx-7series': {
-      name: 'Xilinx 7-Series',
+      name: 'Xilinx 7-Series (-1)',
       tsetup: 0.06,   // ns
       tuncert: 0.1,   // ns (typical PLL jitter)
       tclkq: 0.2,     // ns
-      tlut: 0.1       // ns (LUT + routing estimate)
+      tlut: 0.18      // ns (LUT + routing estimate)
     },
     'xilinx-ultrascale': {
-      name: 'Xilinx UltraScale',
+      name: 'Xilinx UltraScale (-1)',
       tsetup: 0.04,
       tuncert: 0.08,
       tclkq: 0.15,
-      tlut: 0.08
+      tlut: 0.14
     },
     'xilinx-ultrascale+': {
-      name: 'Xilinx UltraScale+',
+      name: 'Xilinx UltraScale+ (-1)',
       tsetup: 0.035,
       tuncert: 0.07,
       tclkq: 0.12,
-      tlut: 0.065
+      tlut: 0.11
     },
     'intel-cyclone-v': {
-      name: 'Intel Cyclone V',
+      name: 'Intel Cyclone V (C7)',
       tsetup: 0.08,
       tuncert: 0.12,
       tclkq: 0.25,
-      tlut: 0.12
+      tlut: 0.2
     },
     'intel-cyclone-10': {
-      name: 'Intel Cyclone 10',
+      name: 'Intel Cyclone 10 (C8)',
       tsetup: 0.07,
       tuncert: 0.1,
       tclkq: 0.22,
-      tlut: 0.1
+      tlut: 0.18
     },
     'intel-arria-10': {
-      name: 'Intel Arria 10',
+      name: 'Intel Arria 10 (-1)',
       tsetup: 0.05,
       tuncert: 0.08,
       tclkq: 0.15,
-      tlut: 0.07
+      tlut: 0.12
     },
     'intel-stratix-10': {
-      name: 'Intel Stratix 10',
+      name: 'Intel Stratix 10 (-1)',
       tsetup: 0.04,
       tuncert: 0.07,
       tclkq: 0.12,
-      tlut: 0.055
+      tlut: 0.09
     }
   },
 

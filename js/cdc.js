@@ -56,8 +56,11 @@ const CdcCalc = {
     const tPeriod = 1 / fSampleHz;
 
     // Available resolution time per synchronizer stage
-    // Each stage gets roughly one clock period minus setup time
-    const tResolve = (tPeriod - tSetupSec) * stages;
+    // Each stage gets roughly one clock period minus setup time minus routing
+    // Assume ~0.3ns routing delay between sync stages (conservative estimate)
+    const tRoutingSec = 0.3e-9;
+    const tResolvePerStage = tPeriod - tSetupSec - tRoutingSec;
+    const tResolve = tResolvePerStage * stages;
 
     // MTBF calculation
     // MTBF = exp(t_resolve / tau) / (f_data * f_sample * T_window)

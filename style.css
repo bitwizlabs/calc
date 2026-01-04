@@ -298,6 +298,15 @@ header h1::before {
   color: var(--error);
 }
 
+.result-warning {
+  margin-top: 0.75rem;
+  padding: 0.5rem;
+  background: rgba(255, 170, 0, 0.1);
+  border-left: 3px solid var(--warning);
+  color: var(--warning);
+  font-size: 0.85rem;
+}
+
 /* Formula display */
 .formula {
   background: var(--bg-light);
@@ -370,6 +379,16 @@ header h1::before {
 
 .pll-results .no-results {
   color: var(--warning);
+}
+
+.pll-results .pfd-warning td {
+  opacity: 0.6;
+}
+
+.pll-results .pfd-note {
+  color: var(--warning);
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
 }
 
 /* Footer */

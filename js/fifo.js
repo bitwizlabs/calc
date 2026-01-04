@@ -11,7 +11,8 @@ const FifoCalc = {
       burst: document.getElementById('fifo-burst'),
       latency: document.getElementById('fifo-latency'),
       minDepth: document.getElementById('fifo-min-depth'),
-      pow2Depth: document.getElementById('fifo-pow2-depth')
+      pow2Depth: document.getElementById('fifo-pow2-depth'),
+      warning: document.getElementById('fifo-warning')
     };
 
     // Bind input events
@@ -34,6 +35,7 @@ const FifoCalc = {
     if (fRead <= 0 || fWrite <= 0 || burst <= 0) {
       this.elements.minDepth.textContent = '--';
       this.elements.pow2Depth.textContent = '--';
+      this.elements.warning.style.display = 'none';
       return;
     }
 
@@ -55,6 +57,17 @@ const FifoCalc = {
 
     this.elements.minDepth.textContent = minDepth + ' words';
     this.elements.pow2Depth.textContent = pow2Depth + ' words';
+
+    // Show warning if write faster than read (continuous streaming will overflow)
+    if (fWrite > fRead) {
+      this.elements.warning.innerHTML =
+        '<strong>Note:</strong> Write clock faster than read. ' +
+        'This depth assumes bursty traffic with idle gaps. ' +
+        'Continuous streaming at these rates will eventually overflow.';
+      this.elements.warning.style.display = 'block';
+    } else {
+      this.elements.warning.style.display = 'none';
+    }
   },
 
   nextPowerOf2(n) {
