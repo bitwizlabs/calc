@@ -444,28 +444,19 @@ footer a:hover {
 
 .help-tooltip {
   display: none;
-  position: absolute;
-  bottom: calc(100% + 8px);
+  position: fixed;
+  top: 50%;
   left: 50%;
-  transform: translateX(-50%);
-  width: 280px;
+  transform: translate(-50%, -50%);
+  width: 300px;
+  max-width: 90vw;
   background: var(--bg-light);
   border: 1px solid var(--accent-dim);
-  padding: 0.75rem;
-  font-size: 0.8rem;
+  padding: 1rem;
+  font-size: 0.85rem;
   line-height: 1.5;
-  z-index: 100;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-}
-
-.help-tooltip::after {
-  content: '';
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  border: 6px solid transparent;
-  border-top-color: var(--accent-dim);
+  z-index: 1000;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
 }
 
 .help-wrapper:hover .help-tooltip,
@@ -521,20 +512,6 @@ footer a:hover {
 
   header h1 {
     font-size: 1.2rem;
-  }
-
-  /* Tooltip adjustments for mobile */
-  .help-tooltip {
-    width: 240px;
-    left: auto;
-    right: -10px;
-    transform: none;
-  }
-
-  .help-tooltip::after {
-    left: auto;
-    right: 14px;
-    transform: none;
   }
 
   /* Preset selector mobile */
