@@ -15,6 +15,7 @@ const FixedPointCalc = {
       intBits: document.getElementById('fp-int-bits'),
       fracBits: document.getElementById('fp-frac-bits'),
       totalBits: document.getElementById('fp-total-bits'),
+      qNotation: document.getElementById('fp-q-notation'),
       actualRange: document.getElementById('fp-actual-range'),
       actualPrecision: document.getElementById('fp-actual-precision')
     };
@@ -113,6 +114,13 @@ const FixedPointCalc = {
     this.elements.intBits.className = 'result-value';
     this.elements.fracBits.textContent = fracBits;
     this.elements.totalBits.textContent = totalBits + ' bits';
+
+    // Q notation: Qm.n (unsigned) or SQm.n / Qm.n with sign (signed)
+    // m = integer bits (excluding sign for signed), n = fractional bits
+    const qInt = isSigned ? intBits - 1 : intBits;
+    const prefix = isSigned ? 'S' : 'U';
+    this.elements.qNotation.textContent = prefix + 'Q' + qInt + '.' + fracBits;
+
     this.elements.actualRange.textContent =
       '[' + this.formatNumber(actualMin) + ', ' + this.formatNumber(actualMax) + ']';
     this.elements.actualPrecision.textContent = this.formatNumber(actualPrecision);
@@ -131,6 +139,7 @@ const FixedPointCalc = {
     this.elements.intBits.className = 'result-value';
     this.elements.fracBits.textContent = '--';
     this.elements.totalBits.textContent = '--';
+    this.elements.qNotation.textContent = '--';
     this.elements.actualRange.textContent = '--';
     this.elements.actualPrecision.textContent = '--';
   },

@@ -213,6 +213,7 @@ const CopyResults = {
           ['Integer Bits', document.getElementById('fp-int-bits').textContent],
           ['Fractional Bits', document.getElementById('fp-frac-bits').textContent],
           ['Total Width', document.getElementById('fp-total-bits').textContent],
+          ['Q Notation', document.getElementById('fp-q-notation').textContent],
           ['Actual Range', document.getElementById('fp-actual-range').textContent],
           ['Actual Precision', document.getElementById('fp-actual-precision').textContent]
         ]);

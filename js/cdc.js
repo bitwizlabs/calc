@@ -1,6 +1,6 @@
 // CDC MTBF Calculator
 // Formula: MTBF = exp(t_resolve / τ) / (f_data × f_sample × T_window)
-// Where t_resolve = clock_period - setup_time (available resolution time per stage)
+// Where t_resolve = (clock_period - setup_time - routing_delay) × stages
 
 const CdcCalc = {
   elements: {},
