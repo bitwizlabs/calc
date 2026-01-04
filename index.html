@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FPGA Calculators | bitwiz.io</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>fpga_calc</h1>
+    <p class="tagline">Interactive calculators for FPGA engineers</p>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-calc="fifo">FIFO Depth</button>
+    <button class="tab" data-calc="cdc">CDC MTBF</button>
+    <button class="tab" data-calc="timing">Timing Budget</button>
+    <button class="tab" data-calc="fixedpoint">Fixed-Point</button>
+    <button class="tab" data-calc="pll">PLL Config</button>
+  </nav>
+
+  <main>
+    <!-- FIFO Depth Calculator -->
+    <section id="fifo" class="calculator active">
+      <h2>FIFO Depth Calculator</h2>
+      <p class="description">Calculate minimum FIFO depth to prevent overflow/underflow</p>
+
+      <div class="inputs">
+        <div class="input-group">
+          <label for="fifo-fwrite">
+            Write Clock (MHz)
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Write Clock Frequency</h4>
+                <p><strong>What:</strong> Clock frequency of the domain writing data into the FIFO.</p>
+                <p><strong>Why:</strong> Determines how fast data enters. If faster than read, FIFO must buffer the difference.</p>
+                <p><strong>Find it:</strong> Check your RTL or constraints file (<code>create_clock</code>) for the clock driving the write port.</p>
+              </span>
+            </span>
+          </label>
+          <input type="number" id="fifo-fwrite" value="100" min="0" step="any">
+        </div>
+        <div class="input-group">
+          <label for="fifo-fread">
+            Read Clock (MHz)
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Read Clock Frequency</h4>
+                <p><strong>What:</strong> Clock frequency of the domain reading data from the FIFO.</p>
+                <p><strong>Why:</strong> If slower than write clock, data accumulates and you need more depth.</p>
+                <p><strong>Find it:</strong> Check constraints for the clock driving the read port. Often a different PLL output or external clock.</p>
+              </span>
+            </span>
+          </label>
+          <input type="number" id="fifo-fread" value="80" min="0" step="any">
+        </div>
+        <div class="input-group">
+          <label for="fifo-burst">
+            Burst Length (words)
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Burst Length</h4>
+                <p><strong>What:</strong> Maximum number of consecutive words written without pause.</p>
+                <p><strong>Why:</strong> The FIFO must hold an entire burst while the reader catches up.</p>
+                <p><strong>Find it:</strong> Check your protocol spec (AXI burst length, packet size) or upstream module's behavior.</p>
+              </span>
+            </span>
+          </label>
+          <input type="number" id="fifo-burst" value="256" min="1" step="1">
+        </div>
+        <div class="input-group">
+          <label for="fifo-latency">
+            Read Latency (cycles)
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Read Start Latency</h4>
+                <p><strong>What:</strong> Cycles before read side starts draining after write begins.</p>
+                <p><strong>Why:</strong> Accounts for CDC synchronizer delay, almost-full detection, and downstream handshaking.</p>
+                <p><strong>Find it:</strong> Typically 2-4 cycles for sync stages + 1-2 for control logic. Conservative: use 4-8.</p>
+              </span>
+            </span>
+          </label>
+          <input type="number" id="fifo-latency" value="4" min="0" step="1">
+        </div>
+      </div>
+
+      <div class="results" id="fifo-results">
+        <div class="results-header">
+          <h3>Results</h3>
+          <button class="copy-btn" data-calc="fifo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            Copy
+          </button>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Minimum Depth:</span>
+          <span class="result-value" id="fifo-min-depth">--</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Power of 2:</span>
+          <span class="result-value" id="fifo-pow2-depth">--</span>
+        </div>
+      </div>
+
+      <div class="formula">
+        <h3>Formula</h3>
+        <code>depth = burst + burst × (f_write - f_read) / f_read + latency</code>
+      </div>
+    </section>
+
+    <!-- CDC MTBF Calculator -->
+    <section id="cdc" class="calculator">
+      <h2>CDC MTBF Calculator</h2>
+      <p class="description">Metastability analysis for clock domain crossing synchronizers</p>
+
+      <div class="preset-selector">
+        <label for="cdc-preset">Device Preset:</label>
+        <select id="cdc-preset">
+          <option value="">-- Select Device --</option>
+          <optgroup label="Xilinx/AMD">
+            <option value="xilinx-7series">Xilinx 7-Series</option>
+            <option value="xilinx-ultrascale">Xilinx UltraScale</option>
+            <option value="xilinx-ultrascale+">Xilinx UltraScale+</option>
+          </optgroup>
+          <optgroup label="Intel/Altera">
+            <option value="intel-cyclone-v">Intel Cyclone V</option>
+            <option value="intel-cyclone-10">Intel Cyclone 10</option>
+            <option value="intel-arria-10">Intel Arria 10</option>
+            <option value="intel-stratix-10">Intel Stratix 10</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <div class="inputs">
+        <div class="input-group">
+          <label for="cdc-fdata">
+            Data Clock (MHz)
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Data Clock Frequency</h4>
+                <p><strong>What:</strong> Clock frequency of the source domain generating the signal.</p>
+                <p><strong>Why:</strong> Higher frequency = more transitions = more chances for metastability.</p>
+                <p><strong>Find it:</strong> The clock driving the flip-flop whose output crosses domains.</p>
+              </span>
+            </span>
+          </label>
+          <input type="number" id="cdc-fdata" value="100" min="0" step="any">
+        </div>
+        <div class="input-group">
+          <label for="cdc-fsample">
+            Sampling Clock (MHz)
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Sampling Clock Frequency</h4>
+                <p><strong>What:</strong> Clock frequency of the destination domain sampling the signal.</p>
+                <p><strong>Why:</strong> Determines resolution time available per synchronizer stage.</p>
+                <p><strong>Find it:</strong> The clock driving your synchronizer flip-flops.</p>
+              </span>
+            </span>
+          </label>
+          <input type="number" id="cdc-fsample" value="125" min="0" step="any">
+        </div>
+        <div class="input-group">
+          <label for="cdc-twindow">
+            Metastability Window (ps)
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Metastability Window (T0)</h4>
+                <p><strong>What:</strong> Time window around clock edge where input changes cause metastability.</p>
+                <p><strong>Why:</strong> Wider window = higher probability of metastable events.</p>
+                <p><strong>Find it:</strong> Device datasheet or ~50ps typical for modern FPGAs. Xilinx: ~40-60ps, Intel: ~50-70ps.</p>
+              </span>
+            </span>
+          </label>
+          <input type="number" id="cdc-twindow" value="50" min="0" step="any">
+        </div>
+        <div class="input-group">
+          <label for="cdc-tau">
+            Time Constant τ (ps)
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Metastability Time Constant</h4>
+                <p><strong>What:</strong> Exponential decay constant for metastability resolution.</p>
+                <p><strong>Why:</strong> Smaller τ = faster resolution = better MTBF.</p>
+                <p><strong>Find it:</strong> Device datasheet. Typically 10-30ps. Xilinx 7-series: ~20ps, UltraScale: ~15ps.</p>
+              </span>
+            </span>
+          </label>
+          <input type="number" id="cdc-tau" value="20" min="0" step="any">
+        </div>
+        <div class="input-group">
+          <label for="cdc-stages">
+            Sync Stages
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Synchronizer Stages</h4>
+                <p><strong>What:</strong> Number of flip-flops in your synchronizer chain.</p>
+                <p><strong>Why:</strong> More stages = exponentially better MTBF, but adds latency.</p>
+                <p><strong>Find it:</strong> Check your RTL. Standard is 2, use 3 for high-reliability or fast clocks.</p>
+              </span>
+            </span>
+          </label>
+          <input type="number" id="cdc-stages" value="2" min="1" max="5" step="1">
+        </div>
+        <div class="input-group">
+          <label for="cdc-tsetup">
+            Setup Time (ns)
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Flip-Flop Setup Time</h4>
+                <p><strong>What:</strong> Time data must be stable before clock edge.</p>
+                <p><strong>Why:</strong> Reduces available resolution time per stage.</p>
+                <p><strong>Find it:</strong> Device datasheet, timing report, or ~0.05-0.15ns for modern FPGAs.</p>
+              </span>
+            </span>
+          </label>
+          <input type="number" id="cdc-tsetup" value="0.1" min="0" step="any">
+        </div>
+      </div>
+
+      <div class="results" id="cdc-results">
+        <div class="results-header">
+          <h3>Results</h3>
+          <button class="copy-btn" data-calc="cdc">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            Copy
+          </button>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Resolution Time:</span>
+          <span class="result-value" id="cdc-tresolve">--</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">MTBF:</span>
+          <span class="result-value" id="cdc-mtbf">--</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Recommendation:</span>
+          <span class="result-value" id="cdc-recommendation">--</span>
+        </div>
+      </div>
+
+      <div class="formula">
+        <h3>Formula</h3>
+        <code>MTBF = exp(t_resolve / τ) / (f_data × f_sample × T_window)</code>
+      </div>
+    </section>
+
+    <!-- Timing Budget Calculator -->
+    <section id="timing" class="calculator">
+      <h2>Timing Budget Calculator</h2>
+      <p class="description">Calculate available slack and max combinational delay</p>
+
+      <div class="preset-selector">
+        <label for="timing-preset">Device Preset:</label>
+        <select id="timing-preset">
+          <option value="">-- Select Device --</option>
+          <optgroup label="Xilinx/AMD">
+            <option value="xilinx-7series">Xilinx 7-Series</option>
+            <option value="xilinx-ultrascale">Xilinx UltraScale</option>
+            <option value="xilinx-ultrascale+">Xilinx UltraScale+</option>
+          </optgroup>
+          <optgroup label="Intel/Altera">
+            <option value="intel-cyclone-v">Intel Cyclone V</option>
+            <option value="intel-cyclone-10">Intel Cyclone 10</option>
+            <option value="intel-arria-10">Intel Arria 10</option>
+            <option value="intel-stratix-10">Intel Stratix 10</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <div class="inputs">
+        <div class="input-group">
+          <label for="timing-freq">
+            Clock Frequency (MHz)
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Clock Frequency</h4>
+                <p><strong>What:</strong> Target operating frequency of your design.</p>
+                <p><strong>Why:</strong> Determines clock period - your total timing budget.</p>
+                <p><strong>Find it:</strong> Your design spec or constraints file (<code>create_clock -period</code>).</p>
+              </span>
+            </span>
+          </label>
+          <input type="number" id="timing-freq" value="200" min="0" step="any">
+        </div>
+        <div class="input-group">
+          <label for="timing-tsetup">
+            Setup Time (ns)
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Flip-Flop Setup Time</h4>
+                <p><strong>What:</strong> Time data must be stable before clock edge at destination register.</p>
+                <p><strong>Why:</strong> Eats into your logic budget - data must arrive early.</p>
+                <p><strong>Find it:</strong> Timing report (Tsu), device datasheet, or ~0.03-0.1ns typical.</p>
+              </span>
+            </span>
+          </label>
+          <input type="number" id="timing-tsetup" value="0.05" min="0" step="any">
+        </div>
+        <div class="input-group">
+          <label for="timing-tuncert">
+            Clock Uncertainty (ns)
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Clock Uncertainty / Jitter</h4>
+                <p><strong>What:</strong> Worst-case clock edge variation (jitter + skew + margin).</p>
+                <p><strong>Why:</strong> Clock edges aren't perfect - must account for variation.</p>
+                <p><strong>Find it:</strong> Timing report or <code>set_clock_uncertainty</code>. Typically 0.05-0.2ns for PLLs.</p>
+              </span>
+            </span>
+          </label>
+          <input type="number" id="timing-tuncert" value="0.1" min="0" step="any">
+        </div>
+        <div class="input-group">
+          <label for="timing-tclkq">
+            Clock-to-Q (ns)
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Clock-to-Q Delay</h4>
+                <p><strong>What:</strong> Time from clock edge to valid data output of source register.</p>
+                <p><strong>Why:</strong> Delay before your logic path even starts.</p>
+                <p><strong>Find it:</strong> Timing report (Tcko), device datasheet, or ~0.1-0.3ns typical.</p>
+              </span>
+            </span>
+          </label>
+          <input type="number" id="timing-tclkq" value="0.2" min="0" step="any">
+        </div>
+        <div class="input-group">
+          <label for="timing-tlut">
+            LUT Delay (ns)
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>LUT Propagation Delay</h4>
+                <p><strong>What:</strong> Average delay through one LUT (for estimating logic levels).</p>
+                <p><strong>Why:</strong> Rough estimate of how many logic levels fit in your budget.</p>
+                <p><strong>Find it:</strong> Device datasheet or timing report. ~0.05-0.15ns typical. Includes routing estimate.</p>
+              </span>
+            </span>
+          </label>
+          <input type="number" id="timing-tlut" value="0.1" min="0" step="any">
+        </div>
+      </div>
+
+      <div class="results" id="timing-results">
+        <div class="results-header">
+          <h3>Results</h3>
+          <button class="copy-btn" data-calc="timing">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            Copy
+          </button>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Clock Period:</span>
+          <span class="result-value" id="timing-period">--</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Available for Logic:</span>
+          <span class="result-value" id="timing-available">--</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Est. Logic Levels:</span>
+          <span class="result-value" id="timing-levels">--</span>
+        </div>
+      </div>
+
+      <div class="formula">
+        <h3>Formula</h3>
+        <code>t_logic = t_period - t_setup - t_uncertainty - t_clk_to_q</code>
+      </div>
+    </section>
+
+    <!-- Fixed-Point Precision Calculator -->
+    <section id="fixedpoint" class="calculator">
+      <h2>Fixed-Point Precision Calculator</h2>
+      <p class="description">Determine bit widths for fixed-point representation</p>
+
+      <div class="inputs">
+        <div class="input-group">
+          <label for="fp-min">
+            Min Value
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Minimum Value</h4>
+                <p><strong>What:</strong> Smallest value you need to represent.</p>
+                <p><strong>Why:</strong> Determines integer bits needed (and sign bit if negative).</p>
+                <p><strong>Find it:</strong> Analyze your algorithm's value range. Include headroom for intermediate results.</p>
+              </span>
+            </span>
+          </label>
+          <input type="number" id="fp-min" value="-10" step="any">
+        </div>
+        <div class="input-group">
+          <label for="fp-max">
+            Max Value
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Maximum Value</h4>
+                <p><strong>What:</strong> Largest value you need to represent.</p>
+                <p><strong>Why:</strong> Determines integer bits needed to avoid overflow.</p>
+                <p><strong>Find it:</strong> Analyze worst-case values. Consider accumulator growth in filters/sums.</p>
+              </span>
+            </span>
+          </label>
+          <input type="number" id="fp-max" value="10" step="any">
+        </div>
+        <div class="input-group">
+          <label for="fp-precision">
+            Required Precision
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Required Precision (LSB)</h4>
+                <p><strong>What:</strong> Smallest difference you need to distinguish between values.</p>
+                <p><strong>Why:</strong> Determines fractional bits. More precision = more bits = more resources.</p>
+                <p><strong>Find it:</strong> Application dependent. Audio: ~0.00001, control: ~0.001, video: ~0.004.</p>
+              </span>
+            </span>
+          </label>
+          <input type="number" id="fp-precision" value="0.001" min="0" step="any">
+        </div>
+        <div class="input-group">
+          <label for="fp-signed">
+            <input type="checkbox" id="fp-signed" checked>
+            Signed
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Signed vs Unsigned</h4>
+                <p><strong>What:</strong> Whether to use two's complement signed representation.</p>
+                <p><strong>Why:</strong> Signed adds 1 bit for sign. Use unsigned only if values are always ≥ 0.</p>
+                <p><strong>Find it:</strong> Check if your algorithm ever produces negative values (including intermediates).</p>
+              </span>
+            </span>
+          </label>
+        </div>
+      </div>
+
+      <div class="results" id="fixedpoint-results">
+        <div class="results-header">
+          <h3>Results</h3>
+          <button class="copy-btn" data-calc="fixedpoint">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            Copy
+          </button>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Integer Bits:</span>
+          <span class="result-value" id="fp-int-bits">--</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Fractional Bits:</span>
+          <span class="result-value" id="fp-frac-bits">--</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Total Width:</span>
+          <span class="result-value" id="fp-total-bits">--</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Actual Range:</span>
+          <span class="result-value" id="fp-actual-range">--</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">Actual Precision:</span>
+          <span class="result-value" id="fp-actual-precision">--</span>
+        </div>
+      </div>
+
+      <div class="formula">
+        <h3>Formula</h3>
+        <code>int_bits = ceil(log2(max(|min|, |max|))) + sign_bit</code><br>
+        <code>frac_bits = ceil(-log2(precision))</code>
+      </div>
+    </section>
+
+    <!-- PLL Config Calculator -->
+    <section id="pll" class="calculator">
+      <h2>PLL/MMCM Config Calculator</h2>
+      <p class="description">Find valid PLL configurations for target frequency</p>
+
+      <div class="preset-selector">
+        <label for="pll-preset">Device Preset:</label>
+        <select id="pll-preset">
+          <option value="">-- Select Device --</option>
+          <optgroup label="Xilinx/AMD">
+            <option value="xilinx-7series-mmcm">Xilinx 7-Series MMCM</option>
+            <option value="xilinx-7series-pll">Xilinx 7-Series PLL</option>
+            <option value="xilinx-ultrascale-mmcm">Xilinx UltraScale MMCM</option>
+            <option value="xilinx-ultrascale+-mmcm">Xilinx UltraScale+ MMCM</option>
+          </optgroup>
+          <optgroup label="Intel/Altera">
+            <option value="intel-cyclone-v">Intel Cyclone V PLL</option>
+            <option value="intel-cyclone-10">Intel Cyclone 10 PLL</option>
+            <option value="intel-arria-10">Intel Arria 10 PLL</option>
+            <option value="intel-stratix-10">Intel Stratix 10 PLL</option>
+          </optgroup>
+        </select>
+      </div>
+
+      <div class="inputs">
+        <div class="input-group">
+          <label for="pll-fin">
+            Input Frequency (MHz)
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Input Reference Frequency</h4>
+                <p><strong>What:</strong> Frequency of the clock feeding the PLL/MMCM.</p>
+                <p><strong>Why:</strong> Base frequency that gets multiplied/divided.</p>
+                <p><strong>Find it:</strong> Board schematic for oscillator frequency, or upstream PLL output.</p>
+              </span>
+            </span>
+          </label>
+          <input type="number" id="pll-fin" value="100" min="0" step="any">
+        </div>
+        <div class="input-group">
+          <label for="pll-fout">
+            Target Output (MHz)
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Desired Output Frequency</h4>
+                <p><strong>What:</strong> The clock frequency you need to generate.</p>
+                <p><strong>Why:</strong> Goal of the calculation - find M/D/O to achieve this.</p>
+                <p><strong>Find it:</strong> Your design requirements, interface specs (DDR, PCIe, etc).</p>
+              </span>
+            </span>
+          </label>
+          <input type="number" id="pll-fout" value="150" min="0" step="any">
+        </div>
+        <div class="input-group">
+          <label for="pll-vco-min">
+            VCO Min (MHz)
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>VCO Minimum Frequency</h4>
+                <p><strong>What:</strong> Minimum operating frequency of the voltage-controlled oscillator.</p>
+                <p><strong>Why:</strong> VCO must stay in valid range for stable operation.</p>
+                <p><strong>Find it:</strong> Device datasheet. Xilinx 7-series: 600MHz, UltraScale: 600-800MHz.</p>
+              </span>
+            </span>
+          </label>
+          <input type="number" id="pll-vco-min" value="600" min="0" step="any">
+        </div>
+        <div class="input-group">
+          <label for="pll-vco-max">
+            VCO Max (MHz)
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>VCO Maximum Frequency</h4>
+                <p><strong>What:</strong> Maximum operating frequency of the VCO.</p>
+                <p><strong>Why:</strong> Exceeding this causes instability or failure.</p>
+                <p><strong>Find it:</strong> Device datasheet. Xilinx 7-series: 1200-1600MHz, UltraScale: 1200-2400MHz (speed grade dependent).</p>
+              </span>
+            </span>
+          </label>
+          <input type="number" id="pll-vco-max" value="1200" min="0" step="any">
+        </div>
+        <div class="input-group">
+          <label for="pll-m-max">
+            M Max
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Multiplier Maximum (M)</h4>
+                <p><strong>What:</strong> Maximum value for the feedback divider (multiplier).</p>
+                <p><strong>Why:</strong> f_vco = f_in × M / D. Larger M = higher VCO frequency.</p>
+                <p><strong>Find it:</strong> Datasheet. Xilinx MMCM: 2-64, PLL: 2-64. Intel: varies by device.</p>
+              </span>
+            </span>
+          </label>
+          <input type="number" id="pll-m-max" value="64" min="1" step="1">
+        </div>
+        <div class="input-group">
+          <label for="pll-d-max">
+            D Max
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Input Divider Maximum (D)</h4>
+                <p><strong>What:</strong> Maximum value for input clock divider.</p>
+                <p><strong>Why:</strong> Divides input before multiplication. Affects PFD frequency.</p>
+                <p><strong>Find it:</strong> Datasheet. Xilinx MMCM: 1-106, PLL: 1-56. Keep PFD > 10MHz typically.</p>
+              </span>
+            </span>
+          </label>
+          <input type="number" id="pll-d-max" value="10" min="1" step="1">
+        </div>
+        <div class="input-group">
+          <label for="pll-o-max">
+            O Max
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Output Divider Maximum (O)</h4>
+                <p><strong>What:</strong> Maximum value for output clock divider.</p>
+                <p><strong>Why:</strong> f_out = f_vco / O. Larger O = lower output frequency.</p>
+                <p><strong>Find it:</strong> Datasheet. Xilinx MMCM: 1-128, PLL: 1-128. Each output can have different O.</p>
+              </span>
+            </span>
+          </label>
+          <input type="number" id="pll-o-max" value="128" min="1" step="1">
+        </div>
+      </div>
+
+      <div class="results" id="pll-results-container">
+        <div class="results-header">
+          <h3>Valid Configurations</h3>
+          <button class="copy-btn" data-calc="pll">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            Copy
+          </button>
+        </div>
+        <div id="pll-results" class="pll-results">
+          <p class="placeholder">Enter values to calculate...</p>
+        </div>
+      </div>
+
+      <div class="formula">
+        <h3>Formula</h3>
+        <code>f_out = f_in × M / (D × O)</code><br>
+        <code>f_vco = f_in × M / D</code>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p><a href="https://bitwiz.io">bitwiz.io</a></p>
+  </footer>
+
+  <script src="js/presets.js"></script>
+  <script src="js/fifo.js"></script>
+  <script src="js/cdc.js"></script>
+  <script src="js/timing.js"></script>
+  <script src="js/fixedpoint.js"></script>
+  <script src="js/pll.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>
