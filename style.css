@@ -118,8 +118,46 @@ header h1::before {
 .description {
   color: var(--text);
   font-size: 0.85rem;
-  margin-bottom: 1.5rem;
+  margin-bottom: 0;
   opacity: 0.8;
+}
+
+/* Calculator header with reset button */
+.calc-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.calc-header > div {
+  flex: 1;
+}
+
+.reset-btn {
+  background: var(--bg-light);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 0.35rem 0.75rem;
+  font-family: inherit;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.reset-btn:hover {
+  background: var(--bg-lighter);
+  border-color: var(--accent-dim);
+  color: var(--text-bright);
+}
+
+.reset-btn:active {
+  background: var(--accent-dim);
+  color: var(--bg);
 }
 
 /* Preset selector */
@@ -472,14 +510,37 @@ footer a:hover {
   background: var(--bg-light);
   border: 1px solid var(--accent-dim);
   padding: 1rem;
+  padding-top: 1.5rem;
   font-size: 0.85rem;
   line-height: 1.5;
   z-index: 1000;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
 }
 
-.help-wrapper:hover .help-tooltip,
-.help-tooltip.active {
+.tooltip-close {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  width: 24px;
+  height: 24px;
+  background: transparent;
+  border: none;
+  color: var(--text);
+  font-size: 1.2rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+}
+
+.tooltip-close:hover {
+  color: var(--accent);
+}
+
+.help-wrapper:hover .help-tooltip:not(.closed),
+.help-tooltip.active:not(.closed) {
   display: block;
 }
 

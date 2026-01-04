@@ -13,6 +13,7 @@ const CdcCalc = {
       tau: document.getElementById('cdc-tau'),
       stages: document.getElementById('cdc-stages'),
       tsetup: document.getElementById('cdc-tsetup'),
+      trouting: document.getElementById('cdc-trouting'),
       tresolve: document.getElementById('cdc-tresolve'),
       mtbf: document.getElementById('cdc-mtbf'),
       recommendation: document.getElementById('cdc-recommendation')
@@ -21,7 +22,8 @@ const CdcCalc = {
     // Bind input events
     const inputs = [this.elements.fdata, this.elements.fsample,
                     this.elements.twindow, this.elements.tau,
-                    this.elements.stages, this.elements.tsetup];
+                    this.elements.stages, this.elements.tsetup,
+                    this.elements.trouting];
     inputs.forEach(input => {
       input.addEventListener('input', () => this.calculate());
     });
@@ -37,6 +39,7 @@ const CdcCalc = {
     const tau = parseFloat(this.elements.tau.value) || 0;          // ps
     const stages = parseInt(this.elements.stages.value) || 2;
     const tSetup = parseFloat(this.elements.tsetup.value) || 0;    // ns
+    const tRouting = parseFloat(this.elements.trouting.value) || 0; // ns
 
     if (fData <= 0 || fSample <= 0 || tWindow <= 0 || tau <= 0) {
       this.elements.tresolve.textContent = '--';
@@ -57,8 +60,7 @@ const CdcCalc = {
 
     // Available resolution time per synchronizer stage
     // Each stage gets roughly one clock period minus setup time minus routing
-    // Assume ~0.3ns routing delay between sync stages (conservative estimate)
-    const tRoutingSec = 0.3e-9;
+    const tRoutingSec = tRouting * 1e-9;  // Convert ns to seconds
     const tResolvePerStage = tPeriod - tSetupSec - tRoutingSec;
     const tResolve = tResolvePerStage * stages;
 
@@ -126,7 +128,8 @@ const CdcCalc = {
       twindow: this.elements.twindow.value,
       tau: this.elements.tau.value,
       stages: this.elements.stages.value,
-      tsetup: this.elements.tsetup.value
+      tsetup: this.elements.tsetup.value,
+      trouting: this.elements.trouting.value
     };
   },
 
@@ -137,6 +140,7 @@ const CdcCalc = {
     if (state.tau !== undefined) this.elements.tau.value = state.tau;
     if (state.stages !== undefined) this.elements.stages.value = state.stages;
     if (state.tsetup !== undefined) this.elements.tsetup.value = state.tsetup;
+    if (state.trouting !== undefined) this.elements.trouting.value = state.trouting;
     this.calculate();
   }
 };

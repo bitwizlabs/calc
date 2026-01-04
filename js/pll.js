@@ -63,7 +63,7 @@ const PllCalc = {
       const fPfd = fIn / d;
       const pfdValid = fPfd >= pfdMin && fPfd <= pfdMax;
 
-      for (let m = 1; m <= mMax && configs.length < maxConfigs; m++) {
+      for (let m = 2; m <= mMax && configs.length < maxConfigs; m++) {
         const fVco = fIn * m / d;
 
         // Check VCO range
