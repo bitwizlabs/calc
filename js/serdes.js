@@ -689,6 +689,8 @@ const SerdesCalc = {
         suggestion = 'Try Agilex F-Tile (up to 116 Gbps PAM4) for higher rates.';
       } else if (gtType === 'agilex-f') {
         suggestion = '116 Gbps is the maximum for Agilex F-Tile (PAM4 mode). For NRZ, max is ~58 Gbps.';
+      } else if (gtType === 'agilex-r') {
+        suggestion = 'Try Agilex F-Tile (up to 116 Gbps PAM4) for higher rates.';
       } else {
         suggestion = 'Try a different transceiver type that supports higher rates.';
       }
