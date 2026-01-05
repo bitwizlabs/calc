@@ -415,9 +415,9 @@ const PROTOCOLS = {
   '5gbe': { name: '5GbE', lineRate: 5.15625, refclks: [156.25], category: 'Ethernet' },
   '10gbe': { name: '10GbE (10GBASE-R)', lineRate: 10.3125, refclks: [156.25, 322.265625], category: 'Ethernet' },
   '25gbe': { name: '25GbE', lineRate: 25.78125, refclks: [156.25, 322.265625], category: 'Ethernet' },
-  '50gbe': { name: '50GbE (PAM4)', lineRate: 53.125, refclks: [156.25, 322.265625], category: 'Ethernet' },
-  '100gbe': { name: '100GbE (PAM4)', lineRate: 106.25, refclks: [156.25, 322.265625], category: 'Ethernet' },
-  '400gbe': { name: '400GbE (per lane)', lineRate: 106.25, refclks: [156.25, 322.265625], category: 'Ethernet' },
+  '50gbe': { name: '50GbE (PAM4)', lineRate: 53.125, refclks: [161.1328125, 156.25], category: 'Ethernet' },
+  '100gbe': { name: '100GbE (PAM4)', lineRate: 106.25, refclks: [161.1328125, 156.25], category: 'Ethernet' },
+  '400gbe': { name: '400GbE (per lane)', lineRate: 106.25, refclks: [161.1328125, 156.25], category: 'Ethernet' },
 
   // PCIe
   'pcie-gen1': { name: 'PCIe Gen1 (2.5 GT/s)', lineRate: 2.5, refclks: [100], category: 'PCIe' },
