@@ -436,8 +436,8 @@ const PROTOCOLS = {
   'sas3': { name: 'SAS-3 (12 Gbps)', lineRate: 12.0, refclks: [150], category: 'Storage' },
 
   // USB
-  'usb3-gen1': { name: 'USB 3.0/3.1 Gen1 (5 Gbps)', lineRate: 5.0, refclks: [125, 100, 48, 26, 24], category: 'USB' },
-  'usb3-gen2': { name: 'USB 3.1 Gen2 (10 Gbps)', lineRate: 10.0, refclks: [125, 100, 48, 26, 24], category: 'USB' },
+  'usb3-gen1': { name: 'USB 3.0/3.1 Gen1 (5 Gbps)', lineRate: 5.0, refclks: [125, 100, 48], category: 'USB' },
+  'usb3-gen2': { name: 'USB 3.1 Gen2 (10 Gbps)', lineRate: 10.0, refclks: [125, 100, 48], category: 'USB' },
 
   // Video
   'dp-rbr': { name: 'DisplayPort RBR (1.62 Gbps)', lineRate: 1.62, refclks: [135, 81], category: 'Video' },
