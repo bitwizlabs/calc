@@ -429,6 +429,93 @@ header h1::before {
   margin-top: 0.5rem;
 }
 
+/* SerDes results table */
+.serdes-results {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.serdes-results table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.serdes-results th,
+.serdes-results td {
+  padding: 0.5rem;
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+}
+
+.serdes-results th {
+  color: var(--text);
+  font-weight: 400;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+}
+
+.serdes-results td {
+  color: var(--text-bright);
+}
+
+.serdes-results tr:hover td {
+  background: var(--bg-lighter);
+}
+
+.serdes-results .exact td {
+  color: var(--accent);
+}
+
+.serdes-results .placeholder {
+  color: var(--text);
+  opacity: 0.6;
+  font-style: italic;
+}
+
+.serdes-results .no-results {
+  color: var(--warning);
+  line-height: 1.6;
+}
+
+.serdes-results .no-results strong {
+  color: var(--error);
+}
+
+.serdes-results .refclk-note {
+  color: var(--warning);
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+}
+
+.serdes-results .error-bullet {
+  display: block;
+  margin-left: 0.5rem;
+  color: var(--text);
+}
+
+/* Tooltip note styling */
+.tooltip-note {
+  font-size: 0.85em;
+  opacity: 0.8;
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
+/* Visually hidden for screen readers */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* Footer */
 footer {
   text-align: center;

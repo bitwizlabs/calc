@@ -18,6 +18,7 @@
     <button class="tab" data-calc="timing" role="tab" aria-selected="false" aria-controls="timing">Timing Budget</button>
     <button class="tab" data-calc="fixedpoint" role="tab" aria-selected="false" aria-controls="fixedpoint">Fixed-Point</button>
     <button class="tab" data-calc="pll" role="tab" aria-selected="false" aria-controls="pll">PLL Config</button>
+    <button class="tab" data-calc="serdes" role="tab" aria-selected="false" aria-controls="serdes">SerDes Line Rate</button>
   </nav>
 
   <main>
@@ -965,6 +966,133 @@
         <code>f_vco = f_in × M / D</code>
       </div>
     </section>
+
+    <!-- SerDes Line Rate Calculator -->
+    <section id="serdes" class="calculator">
+      <div class="calc-header">
+        <div>
+          <h2>SerDes Line Rate Calculator</h2>
+          <p class="description">Find valid GT transceiver PLL configurations</p>
+        </div>
+        <button class="reset-btn" data-calc="serdes">Reset</button>
+      </div>
+
+      <div class="preset-selector">
+        <label for="serdes-gttype">
+          GT Type:
+          <span class="help-wrapper">
+            <span class="help-icon">?</span>
+            <span class="help-tooltip">
+              <h4>GT Transceiver Type</h4>
+              <p><strong>What:</strong> The high-speed serial transceiver block in your FPGA. Different Xilinx/AMD device families have different GT types with varying speed capabilities.</p>
+              <p><strong>How to find:</strong> Check your target device's datasheet or the Vivado device properties. The device family determines which GT type is available.</p>
+              <p><strong>GT Types:</strong><span class="tip-list"><br>
+                - <strong>GTX:</strong> 7-Series (Artix-7, Kintex-7, Virtex-7). Max 12.5 Gbps.<br>
+                - <strong>GTH:</strong> UltraScale/UltraScale+. Max 16.375 Gbps. Most common choice.<br>
+                - <strong>GTY:</strong> UltraScale+ high-speed variant. Max 16.375 Gbps in standard mode.</span></p>
+              <p class="tooltip-note">Rates above 16.375 Gbps require QPLL CLKOUT_RATE=FULL mode (not covered by this calculator).</p>
+            </span>
+          </span>
+        </label>
+        <select id="serdes-gttype" aria-describedby="serdes-gttype-hint">
+          <optgroup label="AMD/Xilinx">
+            <option value="gtx">GTX (7-Series)</option>
+            <option value="gth-us+" selected>GTH (UltraScale+)</option>
+            <option value="gty">GTY (UltraScale+)</option>
+          </optgroup>
+        </select>
+        <span id="serdes-gttype-hint" class="visually-hidden">Select the GT transceiver type for your target FPGA</span>
+      </div>
+
+      <div class="inputs">
+        <div class="input-group">
+          <label for="serdes-linerate">
+            Target Line Rate (Gbps)
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Target Line Rate</h4>
+                <p><strong>What:</strong> The serial data rate you need on the wire - NOT your data throughput! Line rate includes encoding overhead (e.g., 8b/10b adds 25%).</p>
+                <p><strong>Why:</strong> The GT PLL must lock to this exact frequency. This calculator finds divider settings that achieve your target rate.</p>
+                <p><strong>How to find:</strong> Check your protocol spec. For Ethernet, line rate = data rate x encoding factor. For 10GbE: 10 Gbps x (66/64) = 10.3125 Gbps.</p>
+                <p><strong>Common values:</strong><span class="tip-list"><br>
+                  - 1GbE: 1.25 Gbps (8b/10b)<br>
+                  - 10GbE: 10.3125 Gbps (64b/66b)<br>
+                  - PCIe Gen3: 8.0 GT/s (128b/130b)<br>
+                  - PCIe Gen4: 16.0 GT/s (128b/130b)</span></p>
+              </span>
+            </span>
+          </label>
+          <input type="number" id="serdes-linerate" value="10.3125" min="0.1" step="any" aria-describedby="serdes-linerate-hint">
+          <span id="serdes-linerate-hint" class="visually-hidden">Enter your target serial line rate in gigabits per second</span>
+        </div>
+
+        <div class="input-group">
+          <label for="serdes-refclk">
+            Reference Clock (MHz)
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Reference Clock</h4>
+                <p><strong>What:</strong> The clock signal feeding your GT transceiver's PLL. This comes from an oscillator on your board, typically routed to dedicated REFCLK pins.</p>
+                <p><strong>Why:</strong> Must be a clean, low-jitter source. The PLL multiplies this to generate your line rate. Poor refclk quality = poor link quality.</p>
+                <p><strong>How to find:</strong> Check your board schematic for the GT REFCLK oscillator. Common values: 100 MHz (PCIe), 125 MHz (1GbE), 156.25 MHz (10GbE/25GbE).</p>
+                <p><strong>Valid ranges:</strong><span class="tip-list"><br>
+                  - CPLL: 60-820 MHz (60-800 for GTX)<br>
+                  - QPLL: 60-820 MHz (40-670 for GTX)</span></p>
+              </span>
+            </span>
+          </label>
+          <input type="number" id="serdes-refclk" value="156.25" min="1" step="any" aria-describedby="serdes-refclk-hint">
+          <span id="serdes-refclk-hint" class="visually-hidden">Enter your reference clock frequency in megahertz</span>
+        </div>
+      </div>
+
+      <div class="results" id="serdes-results-container" aria-live="polite">
+        <div class="results-header">
+          <h3>
+            Valid Configurations
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Understanding Results</h4>
+                <p><strong>PLL:</strong> CPLL (per-channel) or QPLL0/QPLL1 (shared across quad). CPLL for independent rates, QPLL for shared rates.</p>
+                <p><strong>N/M:</strong> PLL feedback and reference dividers. These set the VCO frequency.</p>
+                <p><strong>OUT_DIV:</strong> Output divider (same for TX/RX). Lower values = better jitter.</p>
+                <p><strong>Error:</strong> "exact" = 0 ppm. For most protocols, &lt;50 ppm is acceptable.</p>
+              </span>
+            </span>
+          </h3>
+          <button class="copy-btn" data-calc="serdes">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            Copy
+          </button>
+        </div>
+        <div id="serdes-configs" class="serdes-results">
+          <p class="placeholder">Enter values to calculate...</p>
+        </div>
+      </div>
+
+      <div class="formula">
+        <h3>
+          Formula
+          <span class="help-wrapper">
+            <span class="help-icon">?</span>
+            <span class="help-tooltip">
+              <h4>SerDes PLL Formulas</h4>
+              <p><strong>CPLL:</strong> VCO runs at half line rate. DDR (*2) doubles the effective rate. Formula: Line_Rate = (RefClk x N / M) x 2 / D</p>
+              <p><strong>QPLL:</strong> Internal /2 divider and DDR *2 cancel out. Formula: Line_Rate = RefClk x N / (M x D)</p>
+              <p><strong>N values:</strong> CPLL: 4,5,8,10,12,15,16,20,25 (N1xN2). QPLL: 16,20,32,40,64,66,80,100+ (FBDIV).</p>
+            </span>
+          </span>
+        </h3>
+        <code>CPLL: Line_Rate = (RefClk × N / M) × 2 / D</code><br>
+        <code>QPLL: Line_Rate = RefClk × N / (M × D)</code>
+      </div>
+    </section>
   </main>
 
   <footer>
@@ -977,6 +1105,7 @@
   <script src="js/timing.js"></script>
   <script src="js/fixedpoint.js"></script>
   <script src="js/pll.js"></script>
+  <script src="js/serdes.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>
