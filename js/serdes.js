@@ -373,7 +373,8 @@ const GT_SPECS = {
       nVals: [1, 2, 4, 8]
     },
 
-    lDivs: [1, 2, 4, 8]    // L counter (output divider)
+    lDivs: [1, 2, 4, 8],   // L counter (output divider)
+    supportsPAM4: true     // E-Tile supports PAM4 up to 57.8 Gbps
   },
 
   // Intel Agilex F-Tile - Highest speed Intel transceiver
