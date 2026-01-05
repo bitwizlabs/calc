@@ -988,28 +988,35 @@
               <p><strong>What:</strong> The high-speed serial transceiver block in your FPGA. Different device families have different transceiver types with varying speed capabilities.</p>
               <p><strong>How to find:</strong> Check your target device's datasheet or the Vivado/Quartus device properties. The device family determines which transceiver type is available.</p>
               <p><strong>AMD/Xilinx GT Types:</strong><span class="tip-list"><br>
-                - <strong>GTX:</strong> 7-Series (Artix-7, Kintex-7, Virtex-7). Max 12.5 Gbps.<br>
+                - <strong>GTP:</strong> Artix-7. Max 6.6 Gbps. CPLL only.<br>
+                - <strong>GTX:</strong> Kintex-7/Virtex-7. Max 12.5 Gbps.<br>
                 - <strong>GTH:</strong> UltraScale/UltraScale+. Max 16.375 Gbps.<br>
-                - <strong>GTY:</strong> UltraScale+ high-speed variant. Max 16.375 Gbps in standard mode.</span></p>
+                - <strong>GTY:</strong> UltraScale+ high-speed. Max 32.75 Gbps (QPLL FULL mode).</span></p>
               <p><strong>Intel/Altera Transceivers:</strong><span class="tip-list"><br>
                 - <strong>Cyclone 10 GX:</strong> Mid-range. Max 12.5 Gbps.<br>
                 - <strong>Arria 10 GX:</strong> High-performance. Max 17.4 Gbps.<br>
-                - <strong>Stratix 10 L-Tile:</strong> Premium. Max 17.4 Gbps. H-Tile/E-Tile support higher rates.</span></p>
-              <p class="tooltip-note">Higher rates may require special PLL modes not covered by this calculator.</p>
+                - <strong>Stratix 10 L-Tile:</strong> Max 17.4 Gbps.<br>
+                - <strong>Stratix 10 H-Tile:</strong> Max 28.3 Gbps (NRZ).<br>
+                - <strong>Stratix 10 E-Tile:</strong> Max 57.8 Gbps (PAM4).</span></p>
+              <p class="tooltip-note">GTY shows both HALF and FULL rate QPLL modes. FULL mode required for 25GbE+.</p>
             </span>
           </span>
         </label>
         <select id="serdes-gttype" aria-describedby="serdes-gttype-hint">
           <option value="">-- Select Device --</option>
           <optgroup label="AMD/Xilinx">
-            <option value="gtx">GTX (7-Series)</option>
+            <option value="gtp">GTP (Artix-7)</option>
+            <option value="gtx">GTX (Kintex-7/Virtex-7)</option>
+            <option value="gth-us">GTH (UltraScale)</option>
             <option value="gth-us+">GTH (UltraScale+)</option>
             <option value="gty">GTY (UltraScale+)</option>
           </optgroup>
           <optgroup label="Intel/Altera">
             <option value="cyclone10gx">Cyclone 10 GX</option>
             <option value="arria10gx">Arria 10 GX</option>
-            <option value="stratix10">Stratix 10 L-Tile</option>
+            <option value="stratix10-l">Stratix 10 L-Tile</option>
+            <option value="stratix10-h">Stratix 10 H-Tile</option>
+            <option value="stratix10-e">Stratix 10 E-Tile</option>
           </optgroup>
         </select>
         <span id="serdes-gttype-hint" class="visually-hidden">Select the GT transceiver type for your target FPGA</span>
@@ -1074,17 +1081,48 @@
         <span id="serdes-protocol-hint" class="visually-hidden">Select a protocol preset or choose Custom for manual entry</span>
       </div>
 
-      <div class="filter-options">
-        <label for="serdes-filter">Suggestions:</label>
-        <select id="serdes-filter">
-          <option value="exact">Exact only (0 ppm)</option>
-          <option value="100" selected>&lt; 100 ppm</option>
-          <option value="1000">&lt; 1000 ppm</option>
-          <option value="none">Show all</option>
-          <option value="custom">Custom...</option>
+      <div class="preset-selector">
+        <label for="serdes-refclk-preset">
+          Reference Clock:
+          <span class="help-wrapper">
+            <span class="help-icon">?</span>
+            <span class="help-tooltip">
+              <h4>Reference Clock Preset</h4>
+              <p><strong>What:</strong> Common reference clock frequencies used with different protocols.</p>
+              <p><strong>Auto-select:</strong> Choosing a protocol above will automatically select the typical reference clock.</p>
+              <p><strong>Custom:</strong> Select "Custom" and enter any value in the input field below.</p>
+            </span>
+          </span>
+        </label>
+        <select id="serdes-refclk-preset">
+          <option value="">-- Custom --</option>
+          <optgroup label="Ethernet">
+            <option value="156.25">156.25 MHz (10GbE/25GbE)</option>
+            <option value="125">125 MHz (1GbE)</option>
+            <option value="322.265625">322.265625 MHz (25GbE alt)</option>
+          </optgroup>
+          <optgroup label="PCIe">
+            <option value="100">100 MHz (PCIe)</option>
+          </optgroup>
+          <optgroup label="Storage">
+            <option value="150">150 MHz (SATA/SAS)</option>
+            <option value="75">75 MHz (SATA alt)</option>
+          </optgroup>
+          <optgroup label="Video">
+            <option value="135">135 MHz (DisplayPort)</option>
+            <option value="270">270 MHz (DisplayPort alt)</option>
+            <option value="148.5">148.5 MHz (HDMI)</option>
+          </optgroup>
+          <optgroup label="Fiber Channel">
+            <option value="106.25">106.25 MHz (FC)</option>
+            <option value="212.5">212.5 MHz (FC alt)</option>
+          </optgroup>
+          <optgroup label="Other Common">
+            <option value="62.5">62.5 MHz</option>
+            <option value="250">250 MHz</option>
+            <option value="312.5">312.5 MHz</option>
+          </optgroup>
         </select>
-        <input type="number" id="serdes-filter-custom" value="100" min="0" step="1" placeholder="ppm" class="filter-custom-input">
-        <span class="filter-hint">ppm</span>
       </div>
 
       <div class="inputs">
@@ -1106,9 +1144,8 @@
               </span>
             </span>
           </label>
-          <input type="text" id="serdes-linerate" value="10.3125" list="serdes-linerate-options" autocomplete="off" aria-describedby="serdes-linerate-hint">
-          <datalist id="serdes-linerate-options"></datalist>
-          <span id="serdes-linerate-hint" class="visually-hidden">Enter your target serial line rate in gigabits per second, or select from common values</span>
+          <input type="number" id="serdes-linerate" value="10.3125" min="0.1" step="any" aria-describedby="serdes-linerate-hint">
+          <span id="serdes-linerate-hint" class="visually-hidden">Enter your target serial line rate in gigabits per second</span>
         </div>
 
         <div class="input-group">
@@ -1127,9 +1164,8 @@
               </span>
             </span>
           </label>
-          <input type="text" id="serdes-refclk" value="156.25" list="serdes-refclk-options" autocomplete="off" aria-describedby="serdes-refclk-hint">
-          <datalist id="serdes-refclk-options"></datalist>
-          <span id="serdes-refclk-hint" class="visually-hidden">Enter your reference clock frequency in megahertz, or select from common values</span>
+          <input type="number" id="serdes-refclk" value="156.25" min="1" step="any" aria-describedby="serdes-refclk-hint">
+          <span id="serdes-refclk-hint" class="visually-hidden">Enter your reference clock frequency in megahertz</span>
         </div>
       </div>
 
@@ -1170,14 +1206,16 @@
               <h4>SerDes PLL Formulas</h4>
               <p><strong>AMD/Xilinx:</strong></p>
               <p><strong>CPLL:</strong> VCO runs at half line rate. DDR (*2) doubles the effective rate. Formula: Line_Rate = (RefClk x N / M) x 2 / D</p>
-              <p><strong>QPLL:</strong> Internal /2 divider and DDR *2 cancel out. Formula: Line_Rate = RefClk x N / (M x D)</p>
+              <p><strong>QPLL (HALF):</strong> Internal /2 divider and DDR *2 cancel out. Formula: Line_Rate = RefClk x N / (M x D)</p>
+              <p><strong>QPLL (FULL):</strong> No internal /2, DDR *2 applied. For GTY 25GbE+. Formula: Line_Rate = (RefClk x N / M) x 2 / D</p>
               <p><strong>Intel/Altera:</strong></p>
               <p><strong>ATX/fPLL:</strong> LC-tank VCO with DDR output. Formula: Line_Rate = (RefClk x M / N) x 2 / L</p>
             </span>
           </span>
         </h3>
         <code>AMD: CPLL: Line_Rate = (RefClk × N / M) × 2 / D</code><br>
-        <code>AMD: QPLL: Line_Rate = RefClk × N / (M × D)</code><br>
+        <code>AMD: QPLL (HALF): Line_Rate = RefClk × N / (M × D)</code><br>
+        <code>AMD: QPLL (FULL): Line_Rate = (RefClk × N / M) × 2 / D</code><br>
         <code>Intel: Line_Rate = (RefClk × M / N) × 2 / L</code>
       </div>
     </section>

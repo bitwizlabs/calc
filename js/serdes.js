@@ -9,13 +9,39 @@
 //   ATX/fPLL: Line_Rate = (RefClk * M / N) * 2 / L  (DDR clocking)
 //
 // Sources:
-//   AMD: UG476 (7-Series), UG576 (UltraScale GTH), UG578 (UltraScale+ GTY)
-//   Intel: Arria 10 Transceiver PHY User Guide, Cyclone 10 GX Transceiver PHY User Guide
+//   AMD: UG482 (7-Series GTP), UG476 (7-Series GTX/GTH), UG576 (UltraScale GTH), UG578 (UltraScale+ GTY)
+//   Intel: Cyclone 10 GX, Arria 10, Stratix 10 L/H/E-Tile Transceiver PHY User Guides
 
 const GT_SPECS = {
-  // GTX (7-Series: Artix-7, Kintex-7, Virtex-7)
+  // GTP (Artix-7) - Lower-power, lower-speed variant
+  // Source: UG482 (7 Series FPGAs GTP Transceivers User Guide)
+  gtp: {
+    name: 'GTP (Artix-7)',
+    lineRateMin: 0.5,      // Gbps
+    lineRateMax: 6.6,      // Gbps (Artix-7 max)
+
+    // Reference clock input range (UG482 Table 2-5)
+    cpllRefclkRange: { min: 60, max: 250 },   // MHz - narrower than GTX
+
+    // GTP has only CPLL (one per channel), no QPLL
+    cpll: {
+      vcoMin: 1.6,         // GHz
+      vcoMax: 3.3,         // GHz
+      nVals: [4, 5, 8, 10, 12, 15, 16, 20, 25],  // N1 * N2 products
+      mVals: [1, 2]        // REFCLK_DIV
+    },
+
+    // Note: GTP has PLL0/PLL1 which are channel PLLs, not quad PLLs
+    // They use the same formula as CPLL: Line_Rate = VCO * 2 / D
+    // For simplicity, we model this as CPLL only since the math is identical
+
+    outDivs: [1, 2, 4, 8]  // No 16x divider on GTP
+  },
+
+  // GTX (7-Series: Kintex-7, Virtex-7) - Higher-speed variant
+  // Source: UG476 (7 Series FPGAs GTX/GTH Transceivers User Guide)
   gtx: {
-    name: 'GTX (7-Series)',
+    name: 'GTX (Kintex-7/Virtex-7)',
     lineRateMin: 0.5,      // Gbps
     lineRateMax: 12.5,     // Gbps (Kintex-7/Virtex-7); Artix-7 limited to 6.6 Gbps
 
@@ -44,7 +70,43 @@ const GT_SPECS = {
     outDivs: [1, 2, 4, 8, 16]
   },
 
-  // GTH (UltraScale / UltraScale+)
+  // GTH (UltraScale) - non-Plus variant
+  // Source: UG576 (UltraScale Architecture GTH Transceivers User Guide)
+  'gth-us': {
+    name: 'GTH (UltraScale)',
+    lineRateMin: 0.5,
+    lineRateMax: 16.375,   // Gbps
+
+    // Reference clock input ranges (for validation)
+    cpllRefclkRange: { min: 60, max: 820 },   // MHz (UG576 Table 2-3)
+    qpllRefclkRange: { min: 60, max: 820 },   // MHz (UG576 Table 2-6)
+
+    cpll: {
+      vcoMin: 2.0,         // GHz
+      vcoMax: 6.25,        // GHz
+      nVals: [4, 5, 8, 10, 12, 15, 16, 20, 25],
+      mVals: [1, 2]
+    },
+
+    qpll0: {
+      vcoMin: 9.8,         // GHz
+      vcoMax: 16.375,      // GHz
+      nVals: [16, 20, 32, 40, 60, 64, 66, 75, 80, 84, 90, 96, 100, 112, 120, 125, 128, 150, 160],
+      mVals: [1, 2, 3, 4]
+    },
+
+    qpll1: {
+      vcoMin: 8.0,         // GHz
+      vcoMax: 13.0,        // GHz
+      nVals: [16, 20, 32, 40, 60, 64, 66, 75, 80, 84, 90, 96, 100, 112, 120, 125, 128, 150, 160],
+      mVals: [1, 2, 3, 4]
+    },
+
+    outDivs: [1, 2, 4, 8, 16]
+  },
+
+  // GTH (UltraScale+) - Plus variant with minor process improvements
+  // Source: UG576 (UltraScale Architecture GTH Transceivers User Guide)
   'gth-us+': {
     name: 'GTH (UltraScale+)',
     lineRateMin: 0.5,
@@ -82,8 +144,7 @@ const GT_SPECS = {
   gty: {
     name: 'GTY (UltraScale+)',
     lineRateMin: 0.5,
-    lineRateMax: 16.375,   // Gbps - limited to standard QPLL mode (CLKOUT_RATE=HALF)
-    // Note: GTY can reach 32.75 Gbps with CLKOUT_RATE=FULL, but that requires different formula
+    lineRateMax: 32.75,    // Gbps - up to 32.75 Gbps with QPLL FULL rate mode
 
     // Reference clock input ranges (for validation)
     cpllRefclkRange: { min: 60, max: 820 },   // MHz (UG578 Table 2-3)
@@ -96,6 +157,8 @@ const GT_SPECS = {
       mVals: [1, 2]
     },
 
+    // QPLL HALF rate mode (CLKOUT_RATE=HALF): Line_Rate = VCO / outDiv
+    // Used for rates up to 16.375 Gbps
     qpll0: {
       vcoMin: 9.8,         // GHz
       vcoMax: 16.375,      // GHz
@@ -108,6 +171,24 @@ const GT_SPECS = {
       vcoMax: 13.0,        // GHz
       nVals: [16, 20, 32, 40, 60, 64, 66, 75, 80, 84, 90, 96, 100, 112, 120, 125, 128, 150, 160],
       mVals: [1, 2, 3, 4]
+    },
+
+    // QPLL FULL rate mode (CLKOUT_RATE=FULL): Line_Rate = VCO * 2 / outDiv
+    // Used for rates 16.375-32.75 Gbps (e.g., 25GbE)
+    qpll0Full: {
+      vcoMin: 9.8,         // GHz
+      vcoMax: 16.375,      // GHz
+      nVals: [16, 20, 32, 40, 60, 64, 66, 75, 80, 84, 90, 96, 100, 112, 120, 125, 128, 150, 160],
+      mVals: [1, 2, 3, 4],
+      fullRateMode: true   // Flag to use *2 formula
+    },
+
+    qpll1Full: {
+      vcoMin: 8.0,         // GHz
+      vcoMax: 13.0,        // GHz
+      nVals: [16, 20, 32, 40, 60, 64, 66, 75, 80, 84, 90, 96, 100, 112, 120, 125, 128, 150, 160],
+      mVals: [1, 2, 3, 4],
+      fullRateMode: true
     },
 
     outDivs: [1, 2, 4, 8, 16]
@@ -174,11 +255,12 @@ const GT_SPECS = {
   },
 
   // Stratix 10 L-Tile
-  stratix10: {
+  // Source: Intel Stratix 10 L- and H-Tile Transceiver PHY User Guide
+  'stratix10-l': {
     name: 'Stratix 10 L-Tile',
     vendor: 'intel',
     lineRateMin: 0.6,      // Gbps
-    lineRateMax: 17.4,     // Gbps (L-Tile max; H-Tile/E-Tile support higher rates)
+    lineRateMax: 17.4,     // Gbps
 
     refclkRange: { min: 50, max: 800 },   // MHz
 
@@ -194,6 +276,64 @@ const GT_SPECS = {
     fpll: {
       vcoMin: 4.8,         // GHz
       vcoMax: 14.0,        // GHz
+      mRange: { min: 8, max: 127 },
+      nVals: [1, 2, 4, 8]
+    },
+
+    lDivs: [1, 2, 4, 8]    // L counter (output divider)
+  },
+
+  // Stratix 10 H-Tile - Higher speed variant
+  // Source: Intel Stratix 10 L- and H-Tile Transceiver PHY User Guide
+  'stratix10-h': {
+    name: 'Stratix 10 H-Tile',
+    vendor: 'intel',
+    lineRateMin: 0.6,      // Gbps
+    lineRateMax: 28.3,     // Gbps (NRZ mode)
+
+    refclkRange: { min: 50, max: 800 },   // MHz
+
+    // ATX PLL - Extended VCO range for higher rates
+    atxpll: {
+      vcoMin: 7.2,         // GHz
+      vcoMax: 14.4,        // GHz
+      mRange: { min: 8, max: 127 },
+      nVals: [1, 2, 4, 8]
+    },
+
+    // fPLL
+    fpll: {
+      vcoMin: 4.8,         // GHz
+      vcoMax: 14.2,        // GHz
+      mRange: { min: 8, max: 127 },
+      nVals: [1, 2, 4, 8]
+    },
+
+    lDivs: [1, 2, 4, 8]    // L counter (output divider)
+  },
+
+  // Stratix 10 E-Tile - Highest speed, supports PAM4
+  // Source: Intel Stratix 10 E-Tile Transceiver PHY User Guide
+  'stratix10-e': {
+    name: 'Stratix 10 E-Tile',
+    vendor: 'intel',
+    lineRateMin: 1.0,      // Gbps
+    lineRateMax: 57.8,     // Gbps (PAM4); 28.9 Gbps NRZ
+
+    refclkRange: { min: 100, max: 800 },   // MHz - narrower min for E-Tile
+
+    // ATX PLL - LC-tank for lower jitter
+    atxpll: {
+      vcoMin: 7.2,         // GHz
+      vcoMax: 14.4,        // GHz
+      mRange: { min: 8, max: 127 },
+      nVals: [1, 2, 4, 8]
+    },
+
+    // fPLL - Ring oscillator, wider range
+    fpll: {
+      vcoMin: 5.0,         // GHz
+      vcoMax: 14.4,        // GHz
       mRange: { min: 8, max: 127 },
       nVals: [1, 2, 4, 8]
     },
@@ -245,19 +385,6 @@ const PROTOCOLS = {
   'fc-16g': { name: 'FC 16GFC', lineRate: 14.025, refclks: [156.25], category: 'Fiber Channel' }
 };
 
-// Common line rates (Gbps) for quick selection
-const COMMON_LINE_RATES = [
-  1.0625, 1.25, 1.5, 1.62, 2.125, 2.5, 2.7, 3.0, 3.125, 3.4,
-  4.25, 5.0, 5.15625, 5.4, 6.0, 8.0, 8.1, 8.5, 10.0, 10.3125,
-  12.0, 12.5, 14.025, 16.0, 25.78125
-];
-
-// Common reference clocks (MHz) for quick selection
-const COMMON_REFCLKS = [
-  62.5, 75, 81, 100, 106.25, 125, 135, 148.5, 150, 156.25,
-  212.5, 250, 270, 312.5, 322.265625
-];
-
 const SerdesCalc = {
   elements: {},
 
@@ -267,28 +394,31 @@ const SerdesCalc = {
       refclk: document.getElementById('serdes-refclk'),
       gttype: document.getElementById('serdes-gttype'),
       protocol: document.getElementById('serdes-protocol'),
-      filter: document.getElementById('serdes-filter'),
-      filterCustom: document.getElementById('serdes-filter-custom'),
-      filterHint: document.querySelector('.filter-hint'),
-      linerateDatalist: document.getElementById('serdes-linerate-options'),
-      refclkDatalist: document.getElementById('serdes-refclk-options'),
+      refclkPreset: document.getElementById('serdes-refclk-preset'),
       configs: document.getElementById('serdes-configs')
     };
 
-    // Bind input events
-    const inputs = [this.elements.linerate, this.elements.refclk];
-    inputs.forEach(input => {
-      input.addEventListener('input', () => {
-        // Clear protocol selection when user manually edits
-        this.elements.protocol.value = '';
-        this.updateDatalistOptions();
-        this.calculate();
-      });
+    // Line rate input - clear protocol when manually edited
+    this.elements.linerate.addEventListener('input', () => {
+      this.elements.protocol.value = '';
+      this.calculate();
+    });
+
+    // Refclk input - clear both protocol and refclk preset when manually edited
+    this.elements.refclk.addEventListener('input', () => {
+      this.elements.protocol.value = '';
+      this.elements.refclkPreset.value = '';
+      this.calculate();
     });
 
     // Bind select change events
-    this.elements.gttype.addEventListener('change', () => {
-      this.updateDatalistOptions();
+    this.elements.gttype.addEventListener('change', () => this.calculate());
+
+    // Refclk preset handler
+    this.elements.refclkPreset.addEventListener('change', () => {
+      if (this.elements.refclkPreset.value) {
+        this.elements.refclk.value = this.elements.refclkPreset.value;
+      }
       this.calculate();
     });
 
@@ -298,121 +428,17 @@ const SerdesCalc = {
       if (protocol) {
         this.elements.linerate.value = protocol.lineRate;
         this.elements.refclk.value = protocol.refclks[0];
+        // Try to match refclk preset dropdown, or set to custom if not found
+        this.elements.refclkPreset.value = protocol.refclks[0].toString();
+        if (!this.elements.refclkPreset.value) {
+          this.elements.refclkPreset.value = ''; // Custom
+        }
       }
-      this.updateDatalistOptions();
       this.calculate();
     });
 
-    // Filter change handler
-    this.elements.filter.addEventListener('change', () => {
-      const isCustom = this.elements.filter.value === 'custom';
-      this.elements.filterCustom.classList.toggle('visible', isCustom);
-      this.elements.filterHint.classList.toggle('visible', isCustom);
-      this.updateDatalistOptions();
-    });
-
-    // Custom filter input handler
-    this.elements.filterCustom.addEventListener('input', () => {
-      this.updateDatalistOptions();
-    });
-
-    // Initial datalist population
-    this.updateDatalistOptions();
-
     // Initial calculation
     this.calculate();
-  },
-
-  // Get the current filter threshold in ppm
-  getFilterThreshold() {
-    const filterValue = this.elements.filter.value;
-    if (filterValue === 'exact') return 0.1;
-    if (filterValue === 'none') return Infinity;
-    if (filterValue === 'custom') {
-      return parseFloat(this.elements.filterCustom.value) || 100;
-    }
-    return parseFloat(filterValue) || 100;
-  },
-
-  // Check if a valid PLL config exists for the given rate/refclk combination
-  hasValidConfig(specs, targetRate, refclkMHz, maxErrorPpm) {
-    if (!specs || !targetRate || targetRate <= 0) return false;
-
-    const refclkGHz = refclkMHz / 1000;
-    const isIntel = specs.vendor === 'intel';
-
-    // Quick check for AMD/Xilinx CPLL
-    if (!isIntel && specs.cpll) {
-      for (const n of specs.cpll.nVals) {
-        for (const m of specs.cpll.mVals) {
-          const vco = refclkGHz * n / m;
-          if (vco < specs.cpll.vcoMin || vco > specs.cpll.vcoMax) continue;
-
-          for (const outDiv of specs.outDivs) {
-            const lineRate = vco * 2 / outDiv;
-            if (lineRate < specs.lineRateMin || lineRate > specs.lineRateMax) continue;
-
-            const errorPpm = Math.abs((lineRate - targetRate) / targetRate) * 1e6;
-            if (errorPpm <= maxErrorPpm) return true;
-          }
-        }
-      }
-    }
-
-    // Quick check for Intel ATX PLL
-    if (isIntel && specs.atxpll) {
-      const mMin = specs.atxpll.mRange.min;
-      const mMax = specs.atxpll.mRange.max;
-      for (let m = mMin; m <= mMax; m++) {
-        for (const n of specs.atxpll.nVals) {
-          const vco = refclkGHz * m / n;
-          if (vco < specs.atxpll.vcoMin || vco > specs.atxpll.vcoMax) continue;
-
-          for (const l of specs.lDivs) {
-            const lineRate = vco * 2 / l;
-            if (lineRate < specs.lineRateMin || lineRate > specs.lineRateMax) continue;
-
-            const errorPpm = Math.abs((lineRate - targetRate) / targetRate) * 1e6;
-            if (errorPpm <= maxErrorPpm) return true;
-          }
-        }
-      }
-    }
-
-    return false;
-  },
-
-  // Update datalist options based on current device and filter
-  updateDatalistOptions() {
-    const gtType = this.elements.gttype.value;
-    const specs = GT_SPECS[gtType];
-    const filterPpm = this.getFilterThreshold();
-    const currentRate = parseFloat(this.elements.linerate.value);
-
-    // Populate line rate datalist
-    let linerateHtml = '';
-    COMMON_LINE_RATES.forEach(rate => {
-      // For line rates, show all common values (filtering would be too restrictive)
-      linerateHtml += `<option value="${rate}">`;
-    });
-    this.elements.linerateDatalist.innerHTML = linerateHtml;
-
-    // Populate refclk datalist - filter based on current line rate if valid
-    let refclkHtml = '';
-    if (specs && currentRate > 0) {
-      COMMON_REFCLKS.forEach(clk => {
-        if (this.hasValidConfig(specs, currentRate, clk, filterPpm)) {
-          refclkHtml += `<option value="${clk}">`;
-        }
-      });
-    }
-    // If no filtered results or no device selected, show all
-    if (!refclkHtml) {
-      COMMON_REFCLKS.forEach(clk => {
-        refclkHtml += `<option value="${clk}">`;
-      });
-    }
-    this.elements.refclkDatalist.innerHTML = refclkHtml;
   },
 
   calculate() {
@@ -458,16 +484,22 @@ const SerdesCalc = {
     }
     if (targetGbps > specs.lineRateMax) {
       let suggestion = '';
-      if (gtType === 'gtx') {
-        suggestion = 'Try GTH (up to 16.375 Gbps) or GTY (up to 16.375 Gbps in standard mode) for higher rates.';
-      } else if (gtType === 'gth-us+') {
-        suggestion = 'For rates above 16.375 Gbps, QPLL must use CLKOUT_RATE=FULL mode. Consult UG576 for manual configuration.';
+      if (gtType === 'gtp') {
+        suggestion = 'Try GTX (Kintex-7/Virtex-7, up to 12.5 Gbps) or GTH for higher rates.';
+      } else if (gtType === 'gtx') {
+        suggestion = 'Try GTH (up to 16.375 Gbps) or GTY (up to 32.75 Gbps with QPLL FULL mode) for higher rates.';
+      } else if (gtType === 'gth-us' || gtType === 'gth-us+') {
+        suggestion = 'Try GTY (up to 32.75 Gbps with QPLL FULL rate mode) for 25GbE and higher rates.';
       } else if (gtType === 'gty') {
-        suggestion = 'For rates above 16.375 Gbps, QPLL must use CLKOUT_RATE=FULL mode. Consult UG578 for manual configuration.';
+        suggestion = 'Rates above 32.75 Gbps require Versal GTY or specialized modes. Consult AMD documentation.';
       } else if (gtType === 'cyclone10gx') {
         suggestion = 'Try Arria 10 GX (up to 17.4 Gbps) or Stratix 10 L-Tile for higher rates.';
-      } else if (gtType === 'arria10gx' || gtType === 'stratix10') {
-        suggestion = 'For rates above 17.4 Gbps, consider Stratix 10 H-Tile (28.3 Gbps) or E-Tile (up to 57.8 Gbps PAM4). Consult Intel documentation.';
+      } else if (gtType === 'arria10gx' || gtType === 'stratix10-l') {
+        suggestion = 'Try Stratix 10 H-Tile (up to 28.3 Gbps) or E-Tile (up to 57.8 Gbps PAM4) for higher rates.';
+      } else if (gtType === 'stratix10-h') {
+        suggestion = 'Try Stratix 10 E-Tile (up to 57.8 Gbps PAM4) for higher rates.';
+      } else if (gtType === 'stratix10-e') {
+        suggestion = '57.8 Gbps is the maximum for E-Tile (PAM4 mode). For NRZ, max is 28.9 Gbps.';
       } else {
         suggestion = 'Try a different transceiver type that supports higher rates.';
       }
@@ -576,6 +608,59 @@ const SerdesCalc = {
             const errorPpm = Math.abs((lineRate - targetGbps) / targetGbps) * 1e6;
             configs.push({
               pll: 'QPLL1',
+              n, m, outDiv,
+              vco,
+              vcoDisplay: vco.toFixed(4),
+              lineRate,
+              lineRateDisplay: lineRate.toFixed(6),
+              errorPpm
+            });
+          }
+        }
+      }
+    }
+
+    // Try QPLL0 FULL rate mode (GTY only) - AMD/Xilinx only
+    // FULL rate mode formula: Line_Rate = VCO * 2 / outDiv (same as CPLL)
+    if (!isIntel && specs.qpll0Full && qpllRefclkValid) {
+      for (const n of specs.qpll0Full.nVals) {
+        for (const m of specs.qpll0Full.mVals) {
+          const vco = refclkGHz * n / m;
+          if (vco < specs.qpll0Full.vcoMin || vco > specs.qpll0Full.vcoMax) continue;
+
+          for (const outDiv of specs.outDivs) {
+            const lineRate = vco * 2 / outDiv;  // FULL rate: VCO * 2 (DDR, no internal /2)
+            if (lineRate < specs.lineRateMin || lineRate > specs.lineRateMax) continue;
+
+            const errorPpm = Math.abs((lineRate - targetGbps) / targetGbps) * 1e6;
+            configs.push({
+              pll: 'QPLL0 (FULL)',
+              n, m, outDiv,
+              vco,
+              vcoDisplay: vco.toFixed(4),
+              lineRate,
+              lineRateDisplay: lineRate.toFixed(6),
+              errorPpm
+            });
+          }
+        }
+      }
+    }
+
+    // Try QPLL1 FULL rate mode (GTY only) - AMD/Xilinx only
+    if (!isIntel && specs.qpll1Full && qpllRefclkValid) {
+      for (const n of specs.qpll1Full.nVals) {
+        for (const m of specs.qpll1Full.mVals) {
+          const vco = refclkGHz * n / m;
+          if (vco < specs.qpll1Full.vcoMin || vco > specs.qpll1Full.vcoMax) continue;
+
+          for (const outDiv of specs.outDivs) {
+            const lineRate = vco * 2 / outDiv;  // FULL rate: VCO * 2
+            if (lineRate < specs.lineRateMin || lineRate > specs.lineRateMax) continue;
+
+            const errorPpm = Math.abs((lineRate - targetGbps) / targetGbps) * 1e6;
+            configs.push({
+              pll: 'QPLL1 (FULL)',
               n, m, outDiv,
               vco,
               vcoDisplay: vco.toFixed(4),
@@ -731,18 +816,50 @@ const SerdesCalc = {
         <tbody>
     `;
 
+    // Track recommendations - first good match for each category
+    // AMD: CPLL (per-channel) vs QPLL (shared across quad)
+    // Intel: ATX PLL (low jitter) vs fPLL (wider VCO range)
+    let recommendedPrimary = false;   // CPLL (AMD) or ATX PLL (Intel)
+    let recommendedSecondary = false; // QPLL (AMD) or fPLL (Intel)
+    const ERROR_THRESHOLD = 100;      // ppm - recommend if under this
+
     topConfigs.forEach((cfg, index) => {
       const isExact = cfg.errorPpm < 0.1;
-      const rowClass = isExact ? ' class="exact"' : '';
+      const isGoodMatch = cfg.errorPpm < ERROR_THRESHOLD;
       const errorText = isExact ? 'exact' : cfg.errorPpm.toFixed(1) + ' ppm';
       const ariaLabel = `Configuration ${index + 1}: ${cfg.pll}, ${errorText}`;
+
       // For Intel: col1=M (multiply), col2=N (divide)
       // For AMD: col1=N (multiply), col2=M (divide)
       const col1Val = isIntel ? cfg.m : cfg.n;
       const col2Val = isIntel ? cfg.n : cfg.m;
+
+      // Determine if this should get a recommendation badge
+      let badge = '';
+      const pllUpper = cfg.pll.toUpperCase();
+      const isPrimaryPLL = pllUpper.includes('CPLL') || pllUpper.includes('ATX');
+      const isSecondaryPLL = pllUpper.includes('QPLL') || pllUpper.includes('FPLL');
+
+      if (isGoodMatch && isPrimaryPLL && !recommendedPrimary) {
+        if (isIntel) {
+          badge = '<span class="rec-badge single" title="Recommended - lowest jitter">★ Rec</span>';
+        } else {
+          badge = '<span class="rec-badge single" title="Best for single-lane designs (per-channel PLL)">★ Single</span>';
+        }
+        recommendedPrimary = true;
+      } else if (isGoodMatch && isSecondaryPLL && !recommendedSecondary) {
+        if (isIntel) {
+          badge = '<span class="rec-badge multi" title="Alternative PLL - wider VCO range">★ Alt</span>';
+        } else {
+          badge = '<span class="rec-badge multi" title="Best for multi-lane designs (shared PLL across quad)">★ Multi</span>';
+        }
+        recommendedSecondary = true;
+      }
+
+      const rowClass = isExact ? ' class="exact"' : '';
       html += `
         <tr${rowClass} aria-label="${ariaLabel}">
-          <td>${cfg.pll}</td>
+          <td>${cfg.pll}${badge}</td>
           <td>${col1Val}</td>
           <td>${col2Val}</td>
           <td>${cfg.outDiv}</td>
@@ -754,6 +871,27 @@ const SerdesCalc = {
     });
 
     html += '</tbody></table>';
+
+    // Add recommendation legend if badges were shown
+    if (recommendedPrimary || recommendedSecondary) {
+      html += '<p class="rec-legend">';
+      if (isIntel) {
+        if (recommendedPrimary) {
+          html += '<span class="rec-badge single">★ Rec</span> Lowest jitter ';
+        }
+        if (recommendedSecondary) {
+          html += '<span class="rec-badge multi">★ Alt</span> Wider VCO range';
+        }
+      } else {
+        if (recommendedPrimary) {
+          html += '<span class="rec-badge single">★ Single</span> Per-channel PLL ';
+        }
+        if (recommendedSecondary) {
+          html += '<span class="rec-badge multi">★ Multi</span> Shared PLL (quad)';
+        }
+      }
+      html += '</p>';
+    }
 
     // Add warnings note if any
     if (warnings.length > 0) {
@@ -774,8 +912,7 @@ const SerdesCalc = {
       refclk: this.elements.refclk.value,
       gttype: this.elements.gttype.value,
       protocol: this.elements.protocol.value,
-      filter: this.elements.filter.value,
-      filterCustom: this.elements.filterCustom.value
+      refclkpreset: this.elements.refclkPreset.value
     };
   },
 
@@ -784,14 +921,7 @@ const SerdesCalc = {
     if (state.refclk !== undefined) this.elements.refclk.value = state.refclk;
     if (state.gttype !== undefined) this.elements.gttype.value = state.gttype;
     if (state.protocol !== undefined) this.elements.protocol.value = state.protocol;
-    if (state.filter !== undefined) {
-      this.elements.filter.value = state.filter;
-      const isCustom = state.filter === 'custom';
-      this.elements.filterCustom.classList.toggle('visible', isCustom);
-      this.elements.filterHint.classList.toggle('visible', isCustom);
-    }
-    if (state.filterCustom !== undefined) this.elements.filterCustom.value = state.filterCustom;
-    this.updateDatalistOptions();
+    if (state.refclkpreset !== undefined) this.elements.refclkPreset.value = state.refclkpreset;
     this.calculate();
   }
 };
