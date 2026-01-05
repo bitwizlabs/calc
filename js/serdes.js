@@ -237,7 +237,7 @@ const GT_SPECS = {
   cyclone10gx: {
     name: 'Cyclone 10 GX',
     vendor: 'intel',
-    lineRateMin: 1.0,      // Gbps (below 1.0 requires oversampling mode)
+    lineRateMin: 0.6,      // Gbps
     lineRateMax: 12.5,     // Gbps
 
     refclkRange: { min: 50, max: 800 },   // MHz
@@ -406,6 +406,37 @@ const GT_SPECS = {
 
     lDivs: [1, 2, 4, 8],   // L counter (output divider)
     supportsPAM4: true     // Flag for PAM4 capable device
+  },
+
+  // Intel Agilex R-Tile - PCIe Gen5 optimized transceiver
+  // Source: Intel Agilex 7 R-Tile Avalon Streaming Intel FPGA IP User Guide
+  // Supports NRZ only (up to 32 Gbps for PCIe Gen5)
+  'agilex-r': {
+    name: 'Agilex R-Tile',
+    vendor: 'intel',
+    lineRateMin: 1.0,      // Gbps
+    lineRateMax: 32.0,     // Gbps (NRZ only, optimized for PCIe Gen5)
+
+    refclkRange: { min: 100, max: 800 },   // MHz
+
+    // ATX PLL
+    atxpll: {
+      vcoMin: 7.2,         // GHz
+      vcoMax: 14.4,        // GHz
+      mRange: { min: 8, max: 127 },
+      nVals: [1, 2, 4, 8]
+    },
+
+    // fPLL
+    fpll: {
+      vcoMin: 5.0,         // GHz
+      vcoMax: 14.4,        // GHz
+      mRange: { min: 8, max: 127 },
+      nVals: [1, 2, 4, 8]
+    },
+
+    lDivs: [1, 2, 4, 8],   // L counter (output divider)
+    supportsPAM4: false    // R-Tile is NRZ only
   }
 };
 
@@ -415,8 +446,10 @@ const PROTOCOLS = {
   '1gbe': { name: '1GbE (1000BASE-X)', lineRate: 1.25, refclks: [125, 62.5], category: 'Ethernet' },
   '2.5gbe': { name: '2.5GbE', lineRate: 3.125, refclks: [156.25, 125], category: 'Ethernet' },
   '5gbe': { name: '5GbE', lineRate: 5.15625, refclks: [156.25], category: 'Ethernet' },
-  '10gbe': { name: '10GbE (10GBASE-R)', lineRate: 10.3125, refclks: [156.25, 322.265625], category: 'Ethernet' },
+  '10gbe': { name: '10GbE (10GBASE-R)', lineRate: 10.3125, refclks: [156.25, 312.5], category: 'Ethernet' },
   '25gbe': { name: '25GbE', lineRate: 25.78125, refclks: [156.25, 322.265625], category: 'Ethernet' },
+  '40gbe': { name: '40GbE (per lane)', lineRate: 10.3125, refclks: [156.25, 312.5], category: 'Ethernet' },
+  '50gbe-nrz': { name: '50GbE (NRZ)', lineRate: 26.5625, refclks: [156.25], category: 'Ethernet' },
   '50gbe': { name: '50GbE (PAM4)', lineRate: 53.125, refclks: [161.1328125, 156.25], category: 'Ethernet' },
   '100gbe': { name: '100GbE (PAM4)', lineRate: 106.25, refclks: [161.1328125, 156.25], category: 'Ethernet' },
   '400gbe': { name: '400GbE (per lane)', lineRate: 106.25, refclks: [161.1328125, 156.25], category: 'Ethernet' },
@@ -426,6 +459,7 @@ const PROTOCOLS = {
   'pcie-gen2': { name: 'PCIe Gen2 (5 GT/s)', lineRate: 5.0, refclks: [100], category: 'PCIe' },
   'pcie-gen3': { name: 'PCIe Gen3 (8 GT/s)', lineRate: 8.0, refclks: [100], category: 'PCIe' },
   'pcie-gen4': { name: 'PCIe Gen4 (16 GT/s)', lineRate: 16.0, refclks: [100], category: 'PCIe' },
+  'pcie-gen5': { name: 'PCIe Gen5 (32 GT/s)', lineRate: 32.0, refclks: [100], category: 'PCIe' },
 
   // Storage
   'sata1': { name: 'SATA I (1.5 Gbps)', lineRate: 1.5, refclks: [150, 75], category: 'Storage' },
