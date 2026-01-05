@@ -252,7 +252,7 @@ const GT_SPECS = {
 
     // fPLL (fractional PLL, alternate)
     fpll: {
-      vcoMin: 6.0,         // GHz
+      vcoMin: 4.8,         // GHz - lowered to support 1GbE (VCO ~5 GHz)
       vcoMax: 12.5,        // GHz
       mRange: { min: 8, max: 127 },
       nVals: [1, 2, 4, 8]
@@ -338,8 +338,8 @@ const GT_SPECS = {
 
     // fPLL
     fpll: {
-      vcoMin: 4.8,         // GHz
-      vcoMax: 14.2,        // GHz
+      vcoMin: 5.0,         // GHz - per Intel spec
+      vcoMax: 14.4,        // GHz - per Intel spec
       mRange: { min: 8, max: 127 },
       nVals: [1, 2, 4, 8]
     },
@@ -436,16 +436,16 @@ const PROTOCOLS = {
   'sas3': { name: 'SAS-3 (12 Gbps)', lineRate: 12.0, refclks: [150], category: 'Storage' },
 
   // USB
-  'usb3-gen1': { name: 'USB 3.0/3.1 Gen1 (5 Gbps)', lineRate: 5.0, refclks: [125, 100], category: 'USB' },
-  'usb3-gen2': { name: 'USB 3.1 Gen2 (10 Gbps)', lineRate: 10.0, refclks: [125, 100], category: 'USB' },
+  'usb3-gen1': { name: 'USB 3.0/3.1 Gen1 (5 Gbps)', lineRate: 5.0, refclks: [125, 100, 48, 26, 24], category: 'USB' },
+  'usb3-gen2': { name: 'USB 3.1 Gen2 (10 Gbps)', lineRate: 10.0, refclks: [125, 100, 48, 26, 24], category: 'USB' },
 
   // Video
   'dp-rbr': { name: 'DisplayPort RBR (1.62 Gbps)', lineRate: 1.62, refclks: [135, 81], category: 'Video' },
   'dp-hbr': { name: 'DisplayPort HBR (2.7 Gbps)', lineRate: 2.7, refclks: [135, 270], category: 'Video' },
   'dp-hbr2': { name: 'DisplayPort HBR2 (5.4 Gbps)', lineRate: 5.4, refclks: [135, 270], category: 'Video' },
   'dp-hbr3': { name: 'DisplayPort HBR3 (8.1 Gbps)', lineRate: 8.1, refclks: [135, 270], category: 'Video' },
-  'hdmi-1.4': { name: 'HDMI 1.4 (3.4 Gbps)', lineRate: 3.4, refclks: [148.5], category: 'Video' },
-  'hdmi-2.0': { name: 'HDMI 2.0 (6 Gbps)', lineRate: 6.0, refclks: [148.5], category: 'Video' },
+  'hdmi-1.4': { name: 'HDMI 1.4 (3.4 Gbps)', lineRate: 3.4, refclks: [148.5, 74.25], category: 'Video' },
+  'hdmi-2.0': { name: 'HDMI 2.0 (6 Gbps)', lineRate: 6.0, refclks: [148.5, 74.25], category: 'Video' },
 
   // Fiber Channel
   'fc-1g': { name: 'FC 1GFC', lineRate: 1.0625, refclks: [106.25, 212.5], category: 'Fiber Channel' },
