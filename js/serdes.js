@@ -199,7 +199,7 @@ const GT_SPECS = {
   // Supports both NRZ (up to 58 Gbps) and PAM4 (up to 112 Gbps)
   gtm: {
     name: 'GTM (Versal Premium)',
-    lineRateMin: 9.8,      // Gbps (NRZ minimum)
+    lineRateMin: 1.25,     // Gbps (supports full range per AM017)
     lineRateMax: 112.0,    // Gbps (PAM4 maximum)
 
     // Reference clock input ranges
