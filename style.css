@@ -205,6 +205,68 @@ header h1::before {
   font-style: normal;
 }
 
+/* Filter options row */
+.filter-options {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-light);
+  border: 1px solid var(--border);
+  font-size: 0.85rem;
+}
+
+.filter-options label {
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.filter-options select {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-bright);
+  padding: 0.3rem 0.5rem;
+  font-family: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.filter-options select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.filter-custom-input {
+  width: 70px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-bright);
+  padding: 0.3rem 0.5rem;
+  font-family: inherit;
+  font-size: 0.85rem;
+  display: none;
+}
+
+.filter-custom-input.visible {
+  display: block;
+}
+
+.filter-custom-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.filter-hint {
+  color: var(--text);
+  font-size: 0.8rem;
+  display: none;
+}
+
+.filter-hint.visible {
+  display: inline;
+}
+
 /* Input groups */
 .inputs {
   display: grid;
@@ -1055,6 +1117,12 @@ footer a:hover {
 
   .preset-selector select {
     max-width: none;
+  }
+
+  /* Filter options mobile */
+  .filter-options {
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
 
   /* Memory bandwidth mobile */

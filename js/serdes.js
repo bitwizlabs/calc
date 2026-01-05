@@ -121,7 +121,7 @@ const GT_SPECS = {
   cyclone10gx: {
     name: 'Cyclone 10 GX',
     vendor: 'intel',
-    lineRateMin: 0.6,      // Gbps
+    lineRateMin: 1.0,      // Gbps (below 1.0 requires oversampling mode)
     lineRateMax: 12.5,     // Gbps
 
     refclkRange: { min: 50, max: 800 },   // MHz
@@ -136,8 +136,8 @@ const GT_SPECS = {
 
     // fPLL (fractional PLL, alternate)
     fpll: {
-      vcoMin: 4.8,         // GHz
-      vcoMax: 14.0,        // GHz
+      vcoMin: 6.0,         // GHz
+      vcoMax: 12.5,        // GHz
       mRange: { min: 8, max: 127 },
       nVals: [1, 2, 4, 8]
     },
@@ -178,7 +178,7 @@ const GT_SPECS = {
     name: 'Stratix 10 L-Tile',
     vendor: 'intel',
     lineRateMin: 0.6,      // Gbps
-    lineRateMax: 17.4,     // Gbps (standard mode; 26 Gbps requires special config)
+    lineRateMax: 17.4,     // Gbps (L-Tile max; H-Tile/E-Tile support higher rates)
 
     refclkRange: { min: 50, max: 800 },   // MHz
 
@@ -202,6 +202,62 @@ const GT_SPECS = {
   }
 };
 
+// Common protocol presets with standard line rates and reference clocks
+const PROTOCOLS = {
+  // Ethernet
+  '1gbe': { name: '1GbE (1000BASE-X)', lineRate: 1.25, refclks: [125, 62.5], category: 'Ethernet' },
+  '2.5gbe': { name: '2.5GbE', lineRate: 3.125, refclks: [156.25, 125], category: 'Ethernet' },
+  '5gbe': { name: '5GbE', lineRate: 5.15625, refclks: [156.25], category: 'Ethernet' },
+  '10gbe': { name: '10GbE (10GBASE-R)', lineRate: 10.3125, refclks: [156.25, 322.265625], category: 'Ethernet' },
+  '25gbe': { name: '25GbE', lineRate: 25.78125, refclks: [156.25, 322.265625], category: 'Ethernet' },
+
+  // PCIe
+  'pcie-gen1': { name: 'PCIe Gen1 (2.5 GT/s)', lineRate: 2.5, refclks: [100], category: 'PCIe' },
+  'pcie-gen2': { name: 'PCIe Gen2 (5 GT/s)', lineRate: 5.0, refclks: [100], category: 'PCIe' },
+  'pcie-gen3': { name: 'PCIe Gen3 (8 GT/s)', lineRate: 8.0, refclks: [100], category: 'PCIe' },
+  'pcie-gen4': { name: 'PCIe Gen4 (16 GT/s)', lineRate: 16.0, refclks: [100], category: 'PCIe' },
+
+  // Storage
+  'sata1': { name: 'SATA I (1.5 Gbps)', lineRate: 1.5, refclks: [150, 75], category: 'Storage' },
+  'sata2': { name: 'SATA II (3 Gbps)', lineRate: 3.0, refclks: [150, 75], category: 'Storage' },
+  'sata3': { name: 'SATA III (6 Gbps)', lineRate: 6.0, refclks: [150, 75], category: 'Storage' },
+  'sas1': { name: 'SAS-1 (3 Gbps)', lineRate: 3.0, refclks: [150], category: 'Storage' },
+  'sas2': { name: 'SAS-2 (6 Gbps)', lineRate: 6.0, refclks: [150], category: 'Storage' },
+  'sas3': { name: 'SAS-3 (12 Gbps)', lineRate: 12.0, refclks: [150], category: 'Storage' },
+
+  // USB
+  'usb3-gen1': { name: 'USB 3.0/3.1 Gen1 (5 Gbps)', lineRate: 5.0, refclks: [125, 100], category: 'USB' },
+  'usb3-gen2': { name: 'USB 3.1 Gen2 (10 Gbps)', lineRate: 10.0, refclks: [125, 100], category: 'USB' },
+
+  // Video
+  'dp-rbr': { name: 'DisplayPort RBR (1.62 Gbps)', lineRate: 1.62, refclks: [135, 81], category: 'Video' },
+  'dp-hbr': { name: 'DisplayPort HBR (2.7 Gbps)', lineRate: 2.7, refclks: [135, 270], category: 'Video' },
+  'dp-hbr2': { name: 'DisplayPort HBR2 (5.4 Gbps)', lineRate: 5.4, refclks: [135, 270], category: 'Video' },
+  'dp-hbr3': { name: 'DisplayPort HBR3 (8.1 Gbps)', lineRate: 8.1, refclks: [135, 270], category: 'Video' },
+  'hdmi-1.4': { name: 'HDMI 1.4 (3.4 Gbps)', lineRate: 3.4, refclks: [148.5], category: 'Video' },
+  'hdmi-2.0': { name: 'HDMI 2.0 (6 Gbps)', lineRate: 6.0, refclks: [148.5], category: 'Video' },
+
+  // Fiber Channel
+  'fc-1g': { name: 'FC 1GFC', lineRate: 1.0625, refclks: [106.25, 212.5], category: 'Fiber Channel' },
+  'fc-2g': { name: 'FC 2GFC', lineRate: 2.125, refclks: [106.25, 212.5], category: 'Fiber Channel' },
+  'fc-4g': { name: 'FC 4GFC', lineRate: 4.25, refclks: [106.25, 212.5], category: 'Fiber Channel' },
+  'fc-8g': { name: 'FC 8GFC', lineRate: 8.5, refclks: [106.25, 212.5], category: 'Fiber Channel' },
+  'fc-16g': { name: 'FC 16GFC', lineRate: 14.025, refclks: [156.25], category: 'Fiber Channel' }
+};
+
+// Common line rates (Gbps) for quick selection
+const COMMON_LINE_RATES = [
+  1.0625, 1.25, 1.5, 1.62, 2.125, 2.5, 2.7, 3.0, 3.125, 3.4,
+  4.25, 5.0, 5.15625, 5.4, 6.0, 8.0, 8.1, 8.5, 10.0, 10.3125,
+  12.0, 12.5, 14.025, 16.0, 25.78125
+];
+
+// Common reference clocks (MHz) for quick selection
+const COMMON_REFCLKS = [
+  62.5, 75, 81, 100, 106.25, 125, 135, 148.5, 150, 156.25,
+  212.5, 250, 270, 312.5, 322.265625
+];
+
 const SerdesCalc = {
   elements: {},
 
@@ -210,20 +266,153 @@ const SerdesCalc = {
       linerate: document.getElementById('serdes-linerate'),
       refclk: document.getElementById('serdes-refclk'),
       gttype: document.getElementById('serdes-gttype'),
+      protocol: document.getElementById('serdes-protocol'),
+      filter: document.getElementById('serdes-filter'),
+      filterCustom: document.getElementById('serdes-filter-custom'),
+      filterHint: document.querySelector('.filter-hint'),
+      linerateDatalist: document.getElementById('serdes-linerate-options'),
+      refclkDatalist: document.getElementById('serdes-refclk-options'),
       configs: document.getElementById('serdes-configs')
     };
 
     // Bind input events
     const inputs = [this.elements.linerate, this.elements.refclk];
     inputs.forEach(input => {
-      input.addEventListener('input', () => this.calculate());
+      input.addEventListener('input', () => {
+        // Clear protocol selection when user manually edits
+        this.elements.protocol.value = '';
+        this.updateDatalistOptions();
+        this.calculate();
+      });
     });
 
-    // Bind select change event
-    this.elements.gttype.addEventListener('change', () => this.calculate());
+    // Bind select change events
+    this.elements.gttype.addEventListener('change', () => {
+      this.updateDatalistOptions();
+      this.calculate();
+    });
+
+    // Protocol preset handler
+    this.elements.protocol.addEventListener('change', () => {
+      const protocol = PROTOCOLS[this.elements.protocol.value];
+      if (protocol) {
+        this.elements.linerate.value = protocol.lineRate;
+        this.elements.refclk.value = protocol.refclks[0];
+      }
+      this.updateDatalistOptions();
+      this.calculate();
+    });
+
+    // Filter change handler
+    this.elements.filter.addEventListener('change', () => {
+      const isCustom = this.elements.filter.value === 'custom';
+      this.elements.filterCustom.classList.toggle('visible', isCustom);
+      this.elements.filterHint.classList.toggle('visible', isCustom);
+      this.updateDatalistOptions();
+    });
+
+    // Custom filter input handler
+    this.elements.filterCustom.addEventListener('input', () => {
+      this.updateDatalistOptions();
+    });
+
+    // Initial datalist population
+    this.updateDatalistOptions();
 
     // Initial calculation
     this.calculate();
+  },
+
+  // Get the current filter threshold in ppm
+  getFilterThreshold() {
+    const filterValue = this.elements.filter.value;
+    if (filterValue === 'exact') return 0.1;
+    if (filterValue === 'none') return Infinity;
+    if (filterValue === 'custom') {
+      return parseFloat(this.elements.filterCustom.value) || 100;
+    }
+    return parseFloat(filterValue) || 100;
+  },
+
+  // Check if a valid PLL config exists for the given rate/refclk combination
+  hasValidConfig(specs, targetRate, refclkMHz, maxErrorPpm) {
+    if (!specs || !targetRate || targetRate <= 0) return false;
+
+    const refclkGHz = refclkMHz / 1000;
+    const isIntel = specs.vendor === 'intel';
+
+    // Quick check for AMD/Xilinx CPLL
+    if (!isIntel && specs.cpll) {
+      for (const n of specs.cpll.nVals) {
+        for (const m of specs.cpll.mVals) {
+          const vco = refclkGHz * n / m;
+          if (vco < specs.cpll.vcoMin || vco > specs.cpll.vcoMax) continue;
+
+          for (const outDiv of specs.outDivs) {
+            const lineRate = vco * 2 / outDiv;
+            if (lineRate < specs.lineRateMin || lineRate > specs.lineRateMax) continue;
+
+            const errorPpm = Math.abs((lineRate - targetRate) / targetRate) * 1e6;
+            if (errorPpm <= maxErrorPpm) return true;
+          }
+        }
+      }
+    }
+
+    // Quick check for Intel ATX PLL
+    if (isIntel && specs.atxpll) {
+      const mMin = specs.atxpll.mRange.min;
+      const mMax = specs.atxpll.mRange.max;
+      for (let m = mMin; m <= mMax; m++) {
+        for (const n of specs.atxpll.nVals) {
+          const vco = refclkGHz * m / n;
+          if (vco < specs.atxpll.vcoMin || vco > specs.atxpll.vcoMax) continue;
+
+          for (const l of specs.lDivs) {
+            const lineRate = vco * 2 / l;
+            if (lineRate < specs.lineRateMin || lineRate > specs.lineRateMax) continue;
+
+            const errorPpm = Math.abs((lineRate - targetRate) / targetRate) * 1e6;
+            if (errorPpm <= maxErrorPpm) return true;
+          }
+        }
+      }
+    }
+
+    return false;
+  },
+
+  // Update datalist options based on current device and filter
+  updateDatalistOptions() {
+    const gtType = this.elements.gttype.value;
+    const specs = GT_SPECS[gtType];
+    const filterPpm = this.getFilterThreshold();
+    const currentRate = parseFloat(this.elements.linerate.value);
+
+    // Populate line rate datalist
+    let linerateHtml = '';
+    COMMON_LINE_RATES.forEach(rate => {
+      // For line rates, show all common values (filtering would be too restrictive)
+      linerateHtml += `<option value="${rate}">`;
+    });
+    this.elements.linerateDatalist.innerHTML = linerateHtml;
+
+    // Populate refclk datalist - filter based on current line rate if valid
+    let refclkHtml = '';
+    if (specs && currentRate > 0) {
+      COMMON_REFCLKS.forEach(clk => {
+        if (this.hasValidConfig(specs, currentRate, clk, filterPpm)) {
+          refclkHtml += `<option value="${clk}">`;
+        }
+      });
+    }
+    // If no filtered results or no device selected, show all
+    if (!refclkHtml) {
+      COMMON_REFCLKS.forEach(clk => {
+        refclkHtml += `<option value="${clk}">`;
+      });
+    }
+    this.elements.refclkDatalist.innerHTML = refclkHtml;
   },
 
   calculate() {
@@ -278,7 +467,7 @@ const SerdesCalc = {
       } else if (gtType === 'cyclone10gx') {
         suggestion = 'Try Arria 10 GX (up to 17.4 Gbps) or Stratix 10 L-Tile for higher rates.';
       } else if (gtType === 'arria10gx' || gtType === 'stratix10') {
-        suggestion = 'For rates above 17.4 Gbps, Stratix 10 L-Tile can reach 26 Gbps with special PLL configuration. Consult Intel documentation.';
+        suggestion = 'For rates above 17.4 Gbps, consider Stratix 10 H-Tile (28.3 Gbps) or E-Tile (up to 57.8 Gbps PAM4). Consult Intel documentation.';
       } else {
         suggestion = 'Try a different transceiver type that supports higher rates.';
       }
@@ -583,7 +772,10 @@ const SerdesCalc = {
     return {
       linerate: this.elements.linerate.value,
       refclk: this.elements.refclk.value,
-      gttype: this.elements.gttype.value
+      gttype: this.elements.gttype.value,
+      protocol: this.elements.protocol.value,
+      filter: this.elements.filter.value,
+      filterCustom: this.elements.filterCustom.value
     };
   },
 
@@ -591,6 +783,15 @@ const SerdesCalc = {
     if (state.linerate !== undefined) this.elements.linerate.value = state.linerate;
     if (state.refclk !== undefined) this.elements.refclk.value = state.refclk;
     if (state.gttype !== undefined) this.elements.gttype.value = state.gttype;
+    if (state.protocol !== undefined) this.elements.protocol.value = state.protocol;
+    if (state.filter !== undefined) {
+      this.elements.filter.value = state.filter;
+      const isCustom = state.filter === 'custom';
+      this.elements.filterCustom.classList.toggle('visible', isCustom);
+      this.elements.filterHint.classList.toggle('visible', isCustom);
+    }
+    if (state.filterCustom !== undefined) this.elements.filterCustom.value = state.filterCustom;
+    this.updateDatalistOptions();
     this.calculate();
   }
 };

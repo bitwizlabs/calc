@@ -994,7 +994,7 @@
               <p><strong>Intel/Altera Transceivers:</strong><span class="tip-list"><br>
                 - <strong>Cyclone 10 GX:</strong> Mid-range. Max 12.5 Gbps.<br>
                 - <strong>Arria 10 GX:</strong> High-performance. Max 17.4 Gbps.<br>
-                - <strong>Stratix 10 L-Tile:</strong> Premium. Max 17.4 Gbps (26 Gbps with different mode).</span></p>
+                - <strong>Stratix 10 L-Tile:</strong> Premium. Max 17.4 Gbps. H-Tile/E-Tile support higher rates.</span></p>
               <p class="tooltip-note">Higher rates may require special PLL modes not covered by this calculator.</p>
             </span>
           </span>
@@ -1013,6 +1013,78 @@
           </optgroup>
         </select>
         <span id="serdes-gttype-hint" class="visually-hidden">Select the GT transceiver type for your target FPGA</span>
+      </div>
+
+      <div class="preset-selector">
+        <label for="serdes-protocol">
+          Protocol:
+          <span class="help-wrapper">
+            <span class="help-icon">?</span>
+            <span class="help-tooltip">
+              <h4>Protocol Preset</h4>
+              <p><strong>What:</strong> Select a standard protocol to auto-fill the line rate and reference clock with typical values.</p>
+              <p><strong>Why:</strong> Each protocol has specific line rate requirements. This ensures you use the correct values.</p>
+              <p><strong>Note:</strong> Select "Custom" to enter your own values manually.</p>
+            </span>
+          </span>
+        </label>
+        <select id="serdes-protocol" aria-describedby="serdes-protocol-hint">
+          <option value="">-- Custom --</option>
+          <optgroup label="Ethernet">
+            <option value="1gbe">1GbE (1000BASE-X)</option>
+            <option value="2.5gbe">2.5GbE</option>
+            <option value="5gbe">5GbE</option>
+            <option value="10gbe">10GbE (10GBASE-R)</option>
+            <option value="25gbe">25GbE</option>
+          </optgroup>
+          <optgroup label="PCIe">
+            <option value="pcie-gen1">PCIe Gen1 (2.5 GT/s)</option>
+            <option value="pcie-gen2">PCIe Gen2 (5 GT/s)</option>
+            <option value="pcie-gen3">PCIe Gen3 (8 GT/s)</option>
+            <option value="pcie-gen4">PCIe Gen4 (16 GT/s)</option>
+          </optgroup>
+          <optgroup label="Storage">
+            <option value="sata1">SATA I (1.5 Gbps)</option>
+            <option value="sata2">SATA II (3 Gbps)</option>
+            <option value="sata3">SATA III (6 Gbps)</option>
+            <option value="sas1">SAS-1 (3 Gbps)</option>
+            <option value="sas2">SAS-2 (6 Gbps)</option>
+            <option value="sas3">SAS-3 (12 Gbps)</option>
+          </optgroup>
+          <optgroup label="USB">
+            <option value="usb3-gen1">USB 3.0/3.1 Gen1 (5 Gbps)</option>
+            <option value="usb3-gen2">USB 3.1 Gen2 (10 Gbps)</option>
+          </optgroup>
+          <optgroup label="Video">
+            <option value="dp-rbr">DisplayPort RBR (1.62 Gbps)</option>
+            <option value="dp-hbr">DisplayPort HBR (2.7 Gbps)</option>
+            <option value="dp-hbr2">DisplayPort HBR2 (5.4 Gbps)</option>
+            <option value="dp-hbr3">DisplayPort HBR3 (8.1 Gbps)</option>
+            <option value="hdmi-1.4">HDMI 1.4 (3.4 Gbps)</option>
+            <option value="hdmi-2.0">HDMI 2.0 (6 Gbps)</option>
+          </optgroup>
+          <optgroup label="Fiber Channel">
+            <option value="fc-1g">FC 1GFC</option>
+            <option value="fc-2g">FC 2GFC</option>
+            <option value="fc-4g">FC 4GFC</option>
+            <option value="fc-8g">FC 8GFC</option>
+            <option value="fc-16g">FC 16GFC</option>
+          </optgroup>
+        </select>
+        <span id="serdes-protocol-hint" class="visually-hidden">Select a protocol preset or choose Custom for manual entry</span>
+      </div>
+
+      <div class="filter-options">
+        <label for="serdes-filter">Suggestions:</label>
+        <select id="serdes-filter">
+          <option value="exact">Exact only (0 ppm)</option>
+          <option value="100" selected>&lt; 100 ppm</option>
+          <option value="1000">&lt; 1000 ppm</option>
+          <option value="none">Show all</option>
+          <option value="custom">Custom...</option>
+        </select>
+        <input type="number" id="serdes-filter-custom" value="100" min="0" step="1" placeholder="ppm" class="filter-custom-input">
+        <span class="filter-hint">ppm</span>
       </div>
 
       <div class="inputs">
@@ -1034,8 +1106,9 @@
               </span>
             </span>
           </label>
-          <input type="number" id="serdes-linerate" value="10.3125" min="0.1" step="any" aria-describedby="serdes-linerate-hint">
-          <span id="serdes-linerate-hint" class="visually-hidden">Enter your target serial line rate in gigabits per second</span>
+          <input type="text" id="serdes-linerate" value="10.3125" list="serdes-linerate-options" autocomplete="off" aria-describedby="serdes-linerate-hint">
+          <datalist id="serdes-linerate-options"></datalist>
+          <span id="serdes-linerate-hint" class="visually-hidden">Enter your target serial line rate in gigabits per second, or select from common values</span>
         </div>
 
         <div class="input-group">
@@ -1054,8 +1127,9 @@
               </span>
             </span>
           </label>
-          <input type="number" id="serdes-refclk" value="156.25" min="1" step="any" aria-describedby="serdes-refclk-hint">
-          <span id="serdes-refclk-hint" class="visually-hidden">Enter your reference clock frequency in megahertz</span>
+          <input type="text" id="serdes-refclk" value="156.25" list="serdes-refclk-options" autocomplete="off" aria-describedby="serdes-refclk-hint">
+          <datalist id="serdes-refclk-options"></datalist>
+          <span id="serdes-refclk-hint" class="visually-hidden">Enter your reference clock frequency in megahertz, or select from common values</span>
         </div>
       </div>
 
