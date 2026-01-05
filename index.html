@@ -991,14 +991,16 @@
                 - <strong>GTP:</strong> Artix-7. Max 6.6 Gbps. CPLL only.<br>
                 - <strong>GTX:</strong> Kintex-7/Virtex-7. Max 12.5 Gbps.<br>
                 - <strong>GTH:</strong> UltraScale/UltraScale+. Max 16.375 Gbps.<br>
-                - <strong>GTY:</strong> UltraScale+ high-speed. Max 32.75 Gbps (QPLL FULL mode).</span></p>
+                - <strong>GTY:</strong> UltraScale+ high-speed. Max 32.75 Gbps.<br>
+                - <strong>GTM:</strong> Versal Premium. Max 112 Gbps (PAM4).</span></p>
               <p><strong>Intel/Altera Transceivers:</strong><span class="tip-list"><br>
                 - <strong>Cyclone 10 GX:</strong> Mid-range. Max 12.5 Gbps.<br>
                 - <strong>Arria 10 GX:</strong> High-performance. Max 17.4 Gbps.<br>
                 - <strong>Stratix 10 L-Tile:</strong> Max 17.4 Gbps.<br>
                 - <strong>Stratix 10 H-Tile:</strong> Max 28.3 Gbps (NRZ).<br>
-                - <strong>Stratix 10 E-Tile:</strong> Max 57.8 Gbps (PAM4).</span></p>
-              <p class="tooltip-note">GTY shows both HALF and FULL rate QPLL modes. FULL mode required for 25GbE+.</p>
+                - <strong>Stratix 10 E-Tile:</strong> Max 57.8 Gbps (PAM4).<br>
+                - <strong>Agilex F-Tile:</strong> Max 116 Gbps (PAM4).</span></p>
+              <p class="tooltip-note">PAM4 devices show both NRZ and PAM4 modes. 100GbE requires PAM4.</p>
             </span>
           </span>
         </label>
@@ -1010,6 +1012,7 @@
             <option value="gth-us">GTH (UltraScale)</option>
             <option value="gth-us+">GTH (UltraScale+)</option>
             <option value="gty">GTY (UltraScale+)</option>
+            <option value="gtm">GTM (Versal Premium)</option>
           </optgroup>
           <optgroup label="Intel/Altera">
             <option value="cyclone10gx">Cyclone 10 GX</option>
@@ -1017,6 +1020,7 @@
             <option value="stratix10-l">Stratix 10 L-Tile</option>
             <option value="stratix10-h">Stratix 10 H-Tile</option>
             <option value="stratix10-e">Stratix 10 E-Tile</option>
+            <option value="agilex-f">Agilex F-Tile</option>
           </optgroup>
         </select>
         <span id="serdes-gttype-hint" class="visually-hidden">Select the GT transceiver type for your target FPGA</span>
@@ -1043,6 +1047,9 @@
             <option value="5gbe">5GbE</option>
             <option value="10gbe">10GbE (10GBASE-R)</option>
             <option value="25gbe">25GbE</option>
+            <option value="50gbe">50GbE (PAM4)</option>
+            <option value="100gbe">100GbE (PAM4)</option>
+            <option value="400gbe">400GbE (per lane)</option>
           </optgroup>
           <optgroup label="PCIe">
             <option value="pcie-gen1">PCIe Gen1 (2.5 GT/s)</option>

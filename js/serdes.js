@@ -194,6 +194,40 @@ const GT_SPECS = {
     outDivs: [1, 2, 4, 8, 16]
   },
 
+  // GTM (Versal Premium) - Highest speed AMD transceiver
+  // Source: AMD PG331 (Versal ACAP Integrated 112G Multirate Ethernet)
+  // Supports both NRZ (up to 58 Gbps) and PAM4 (up to 112 Gbps)
+  gtm: {
+    name: 'GTM (Versal Premium)',
+    lineRateMin: 9.8,      // Gbps (NRZ minimum)
+    lineRateMax: 112.0,    // Gbps (PAM4 maximum)
+
+    // Reference clock input ranges
+    cpllRefclkRange: { min: 60, max: 820 },   // MHz
+    qpllRefclkRange: { min: 60, max: 820 },   // MHz
+
+    // LCPLL (LC-tank PLL) - Primary TX PLL, lowest jitter
+    // For NRZ mode: Line_Rate = VCO * 2 / outDiv (DDR)
+    // For PAM4 mode: Line_Rate = VCO * 4 / outDiv (PAM4 doubles effective rate)
+    lcpll: {
+      vcoMin: 12.375,      // GHz
+      vcoMax: 28.21,       // GHz
+      nVals: [16, 20, 25, 32, 40, 50, 64, 66, 75, 80, 100, 110, 125, 128, 132],
+      mVals: [1, 2, 4]
+    },
+
+    // RPLL (Ring PLL) - Alternative, wider frequency range
+    rpll: {
+      vcoMin: 9.8,         // GHz
+      vcoMax: 16.375,      // GHz
+      nVals: [16, 20, 32, 40, 60, 64, 66, 75, 80, 84, 90, 96, 100, 112, 120, 125, 128, 150, 160],
+      mVals: [1, 2, 3, 4]
+    },
+
+    outDivs: [1, 2, 4],    // GTM has fewer output dividers
+    supportsPAM4: true     // Flag for PAM4 capable device
+  },
+
   // Intel/Altera Transceivers
   // Formula: Line_Rate = (RefClk * M / N) * 2 / L
   // Note: Intel uses M for multiply and N for divide (opposite of Xilinx naming)
@@ -339,6 +373,37 @@ const GT_SPECS = {
     },
 
     lDivs: [1, 2, 4, 8]    // L counter (output divider)
+  },
+
+  // Intel Agilex F-Tile - Highest speed Intel transceiver
+  // Source: Intel Agilex 7 F-Tile Transceiver PHY User Guide
+  // Supports NRZ (up to 58 Gbps) and PAM4 (up to 116 Gbps)
+  'agilex-f': {
+    name: 'Agilex F-Tile',
+    vendor: 'intel',
+    lineRateMin: 1.0,      // Gbps
+    lineRateMax: 116.0,    // Gbps (PAM4); 58 Gbps NRZ
+
+    refclkRange: { min: 100, max: 800 },   // MHz
+
+    // ATX PLL - LC-tank for lower jitter
+    atxpll: {
+      vcoMin: 7.2,         // GHz
+      vcoMax: 14.4,        // GHz
+      mRange: { min: 8, max: 127 },
+      nVals: [1, 2, 4, 8]
+    },
+
+    // fPLL - Ring oscillator, wider range
+    fpll: {
+      vcoMin: 5.0,         // GHz
+      vcoMax: 14.4,        // GHz
+      mRange: { min: 8, max: 127 },
+      nVals: [1, 2, 4, 8]
+    },
+
+    lDivs: [1, 2, 4, 8],   // L counter (output divider)
+    supportsPAM4: true     // Flag for PAM4 capable device
   }
 };
 
@@ -350,6 +415,9 @@ const PROTOCOLS = {
   '5gbe': { name: '5GbE', lineRate: 5.15625, refclks: [156.25], category: 'Ethernet' },
   '10gbe': { name: '10GbE (10GBASE-R)', lineRate: 10.3125, refclks: [156.25, 322.265625], category: 'Ethernet' },
   '25gbe': { name: '25GbE', lineRate: 25.78125, refclks: [156.25, 322.265625], category: 'Ethernet' },
+  '50gbe': { name: '50GbE (PAM4)', lineRate: 53.125, refclks: [156.25, 322.265625], category: 'Ethernet' },
+  '100gbe': { name: '100GbE (PAM4)', lineRate: 106.25, refclks: [156.25, 322.265625], category: 'Ethernet' },
+  '400gbe': { name: '400GbE (per lane)', lineRate: 106.25, refclks: [156.25, 322.265625], category: 'Ethernet' },
 
   // PCIe
   'pcie-gen1': { name: 'PCIe Gen1 (2.5 GT/s)', lineRate: 2.5, refclks: [100], category: 'PCIe' },
@@ -491,15 +559,19 @@ const SerdesCalc = {
       } else if (gtType === 'gth-us' || gtType === 'gth-us+') {
         suggestion = 'Try GTY (up to 32.75 Gbps with QPLL FULL rate mode) for 25GbE and higher rates.';
       } else if (gtType === 'gty') {
-        suggestion = 'Rates above 32.75 Gbps require Versal GTY or specialized modes. Consult AMD documentation.';
+        suggestion = 'Try Versal GTM (up to 112 Gbps PAM4) for 100GbE and higher rates.';
+      } else if (gtType === 'gtm') {
+        suggestion = '112 Gbps is the maximum for GTM (PAM4 mode). For NRZ, max is ~58 Gbps.';
       } else if (gtType === 'cyclone10gx') {
         suggestion = 'Try Arria 10 GX (up to 17.4 Gbps) or Stratix 10 L-Tile for higher rates.';
       } else if (gtType === 'arria10gx' || gtType === 'stratix10-l') {
         suggestion = 'Try Stratix 10 H-Tile (up to 28.3 Gbps) or E-Tile (up to 57.8 Gbps PAM4) for higher rates.';
       } else if (gtType === 'stratix10-h') {
-        suggestion = 'Try Stratix 10 E-Tile (up to 57.8 Gbps PAM4) for higher rates.';
+        suggestion = 'Try Stratix 10 E-Tile (up to 57.8 Gbps PAM4) or Agilex F-Tile (up to 116 Gbps PAM4) for higher rates.';
       } else if (gtType === 'stratix10-e') {
-        suggestion = '57.8 Gbps is the maximum for E-Tile (PAM4 mode). For NRZ, max is 28.9 Gbps.';
+        suggestion = 'Try Agilex F-Tile (up to 116 Gbps PAM4) for higher rates.';
+      } else if (gtType === 'agilex-f') {
+        suggestion = '116 Gbps is the maximum for Agilex F-Tile (PAM4 mode). For NRZ, max is ~58 Gbps.';
       } else {
         suggestion = 'Try a different transceiver type that supports higher rates.';
       }
@@ -704,6 +776,79 @@ const SerdesCalc = {
       }
     }
 
+    // GTM (Versal Premium) PLL calculations - AMD/Xilinx only
+    // LCPLL: LC-tank PLL, lowest jitter, for high-speed links
+    // RPLL: Ring PLL, alternative with different VCO range
+    if (!isIntel && specs.lcpll && qpllRefclkValid) {
+      // Try LCPLL in NRZ mode: Line_Rate = VCO * 2 / outDiv
+      for (const n of specs.lcpll.nVals) {
+        for (const m of specs.lcpll.mVals) {
+          const vco = refclkGHz * n / m;
+          if (vco < specs.lcpll.vcoMin || vco > specs.lcpll.vcoMax) continue;
+
+          for (const outDiv of specs.outDivs) {
+            // NRZ mode: VCO * 2 / outDiv (DDR)
+            const lineRateNRZ = vco * 2 / outDiv;
+            if (lineRateNRZ >= specs.lineRateMin && lineRateNRZ <= 58) {  // NRZ max ~58 Gbps
+              const errorPpm = Math.abs((lineRateNRZ - targetGbps) / targetGbps) * 1e6;
+              configs.push({
+                pll: 'LCPLL (NRZ)',
+                n, m, outDiv,
+                vco,
+                vcoDisplay: vco.toFixed(4),
+                lineRate: lineRateNRZ,
+                lineRateDisplay: lineRateNRZ.toFixed(6),
+                errorPpm
+              });
+            }
+
+            // PAM4 mode: VCO * 4 / outDiv (2 bits per symbol)
+            if (specs.supportsPAM4) {
+              const lineRatePAM4 = vco * 4 / outDiv;
+              if (lineRatePAM4 >= 19.6 && lineRatePAM4 <= specs.lineRateMax) {  // PAM4 min ~19.6 Gbps
+                const errorPpm = Math.abs((lineRatePAM4 - targetGbps) / targetGbps) * 1e6;
+                configs.push({
+                  pll: 'LCPLL (PAM4)',
+                  n, m, outDiv,
+                  vco,
+                  vcoDisplay: vco.toFixed(4),
+                  lineRate: lineRatePAM4,
+                  lineRateDisplay: lineRatePAM4.toFixed(6),
+                  errorPpm
+                });
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Try RPLL (GTM Ring PLL) - AMD/Xilinx only
+    if (!isIntel && specs.rpll && qpllRefclkValid) {
+      for (const n of specs.rpll.nVals) {
+        for (const m of specs.rpll.mVals) {
+          const vco = refclkGHz * n / m;
+          if (vco < specs.rpll.vcoMin || vco > specs.rpll.vcoMax) continue;
+
+          for (const outDiv of specs.outDivs) {
+            const lineRate = vco * 2 / outDiv;  // DDR clocking
+            if (lineRate < specs.lineRateMin || lineRate > specs.lineRateMax) continue;
+
+            const errorPpm = Math.abs((lineRate - targetGbps) / targetGbps) * 1e6;
+            configs.push({
+              pll: 'RPLL',
+              n, m, outDiv,
+              vco,
+              vcoDisplay: vco.toFixed(4),
+              lineRate,
+              lineRateDisplay: lineRate.toFixed(6),
+              errorPpm
+            });
+          }
+        }
+      }
+    }
+
     // Intel/Altera PLL calculations
     // Formula: Line_Rate = (RefClk * M / N) * 2 / L (DDR clocking)
     if (isIntel && intelRefclkValid) {
@@ -717,19 +862,37 @@ const SerdesCalc = {
             if (vco < specs.atxpll.vcoMin || vco > specs.atxpll.vcoMax) continue;
 
             for (const l of specs.lDivs) {
-              const lineRate = vco * 2 / l;  // DDR: *2
-              if (lineRate < specs.lineRateMin || lineRate > specs.lineRateMax) continue;
+              // NRZ mode: VCO * 2 / L (DDR)
+              const lineRateNRZ = vco * 2 / l;
+              if (lineRateNRZ >= specs.lineRateMin && lineRateNRZ <= 58) {  // NRZ max ~58 Gbps
+                const errorPpm = Math.abs((lineRateNRZ - targetGbps) / targetGbps) * 1e6;
+                configs.push({
+                  pll: specs.supportsPAM4 ? 'ATX PLL (NRZ)' : 'ATX PLL',
+                  n, m, outDiv: l,
+                  vco,
+                  vcoDisplay: vco.toFixed(4),
+                  lineRate: lineRateNRZ,
+                  lineRateDisplay: lineRateNRZ.toFixed(6),
+                  errorPpm
+                });
+              }
 
-              const errorPpm = Math.abs((lineRate - targetGbps) / targetGbps) * 1e6;
-              configs.push({
-                pll: 'ATX PLL',
-                n, m, outDiv: l,
-                vco,
-                vcoDisplay: vco.toFixed(4),
-                lineRate,
-                lineRateDisplay: lineRate.toFixed(6),
-                errorPpm
-              });
+              // PAM4 mode: VCO * 4 / L (2 bits per symbol)
+              if (specs.supportsPAM4) {
+                const lineRatePAM4 = vco * 4 / l;
+                if (lineRatePAM4 >= 20 && lineRatePAM4 <= specs.lineRateMax) {  // PAM4 min ~20 Gbps
+                  const errorPpm = Math.abs((lineRatePAM4 - targetGbps) / targetGbps) * 1e6;
+                  configs.push({
+                    pll: 'ATX PLL (PAM4)',
+                    n, m, outDiv: l,
+                    vco,
+                    vcoDisplay: vco.toFixed(4),
+                    lineRate: lineRatePAM4,
+                    lineRateDisplay: lineRatePAM4.toFixed(6),
+                    errorPpm
+                  });
+                }
+              }
             }
           }
         }
@@ -745,19 +908,37 @@ const SerdesCalc = {
             if (vco < specs.fpll.vcoMin || vco > specs.fpll.vcoMax) continue;
 
             for (const l of specs.lDivs) {
-              const lineRate = vco * 2 / l;  // DDR: *2
-              if (lineRate < specs.lineRateMin || lineRate > specs.lineRateMax) continue;
+              // NRZ mode: VCO * 2 / L (DDR)
+              const lineRateNRZ = vco * 2 / l;
+              if (lineRateNRZ >= specs.lineRateMin && lineRateNRZ <= 58) {  // NRZ max ~58 Gbps
+                const errorPpm = Math.abs((lineRateNRZ - targetGbps) / targetGbps) * 1e6;
+                configs.push({
+                  pll: specs.supportsPAM4 ? 'fPLL (NRZ)' : 'fPLL',
+                  n, m, outDiv: l,
+                  vco,
+                  vcoDisplay: vco.toFixed(4),
+                  lineRate: lineRateNRZ,
+                  lineRateDisplay: lineRateNRZ.toFixed(6),
+                  errorPpm
+                });
+              }
 
-              const errorPpm = Math.abs((lineRate - targetGbps) / targetGbps) * 1e6;
-              configs.push({
-                pll: 'fPLL',
-                n, m, outDiv: l,
-                vco,
-                vcoDisplay: vco.toFixed(4),
-                lineRate,
-                lineRateDisplay: lineRate.toFixed(6),
-                errorPpm
-              });
+              // PAM4 mode: VCO * 4 / L (2 bits per symbol)
+              if (specs.supportsPAM4) {
+                const lineRatePAM4 = vco * 4 / l;
+                if (lineRatePAM4 >= 20 && lineRatePAM4 <= specs.lineRateMax) {  // PAM4 min ~20 Gbps
+                  const errorPpm = Math.abs((lineRatePAM4 - targetGbps) / targetGbps) * 1e6;
+                  configs.push({
+                    pll: 'fPLL (PAM4)',
+                    n, m, outDiv: l,
+                    vco,
+                    vcoDisplay: vco.toFixed(4),
+                    lineRate: lineRatePAM4,
+                    lineRateDisplay: lineRatePAM4.toFixed(6),
+                    errorPpm
+                  });
+                }
+              }
             }
           }
         }
@@ -837,8 +1018,10 @@ const SerdesCalc = {
       // Determine if this should get a recommendation badge
       let badge = '';
       const pllUpper = cfg.pll.toUpperCase();
-      const isPrimaryPLL = pllUpper.includes('CPLL') || pllUpper.includes('ATX');
-      const isSecondaryPLL = pllUpper.includes('QPLL') || pllUpper.includes('FPLL');
+      // Primary PLLs: CPLL/LCPLL (AMD per-channel), ATX PLL (Intel low-jitter)
+      const isPrimaryPLL = pllUpper.includes('CPLL') || pllUpper.includes('LCPLL') || pllUpper.includes('ATX');
+      // Secondary PLLs: QPLL/RPLL (AMD shared/alt), fPLL (Intel wider range)
+      const isSecondaryPLL = pllUpper.includes('QPLL') || pllUpper.includes('RPLL') || pllUpper.includes('FPLL');
 
       if (isGoodMatch && isPrimaryPLL && !recommendedPrimary) {
         if (isIntel) {
