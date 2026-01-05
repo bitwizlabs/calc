@@ -480,7 +480,10 @@ const SerdesCalc = {
     });
 
     // Bind select change events
-    this.elements.gttype.addEventListener('change', () => this.calculate());
+    this.elements.gttype.addEventListener('change', () => {
+      this.updateProtocolOptions();
+      this.calculate();
+    });
 
     // Refclk preset handler
     this.elements.refclkPreset.addEventListener('change', () => {
@@ -502,11 +505,89 @@ const SerdesCalc = {
           this.elements.refclkPreset.value = ''; // Custom
         }
       }
+      this.updateRefclkOptions();
       this.calculate();
     });
 
+    // Initial filter update
+    this.updateProtocolOptions();
+    this.updateRefclkOptions();
+
     // Initial calculation
     this.calculate();
+  },
+
+  // Filter protocol options based on selected device's line rate range
+  updateProtocolOptions() {
+    const gtType = this.elements.gttype.value;
+    const protocolSelect = this.elements.protocol;
+    const currentValue = protocolSelect.value;
+
+    // Get device specs (if selected)
+    const specs = gtType ? GT_SPECS[gtType] : null;
+
+    // Show/hide protocol options based on device capability
+    const options = protocolSelect.querySelectorAll('option[value]');
+    options.forEach(option => {
+      if (!option.value) return; // Skip "Custom" option
+
+      const protocol = PROTOCOLS[option.value];
+      if (!protocol) return;
+
+      // Show option if no device selected, or if protocol is within device range
+      const isCompatible = !specs ||
+        (protocol.lineRate >= specs.lineRateMin && protocol.lineRate <= specs.lineRateMax);
+
+      option.style.display = isCompatible ? '' : 'none';
+      option.disabled = !isCompatible;
+    });
+
+    // If current selection is now hidden, reset to Custom
+    if (currentValue) {
+      const currentOption = protocolSelect.querySelector(`option[value="${currentValue}"]`);
+      if (currentOption && currentOption.disabled) {
+        protocolSelect.value = '';
+      }
+    }
+  },
+
+  // Filter refclk options based on selected protocol
+  updateRefclkOptions() {
+    const protocolKey = this.elements.protocol.value;
+    const refclkSelect = this.elements.refclkPreset;
+    const currentValue = refclkSelect.value;
+
+    // Get protocol's valid refclks (if selected)
+    const protocol = protocolKey ? PROTOCOLS[protocolKey] : null;
+    const validRefclks = protocol ? protocol.refclks : null;
+
+    // Show/hide refclk options based on protocol
+    const options = refclkSelect.querySelectorAll('option[value]');
+    options.forEach(option => {
+      if (!option.value) return; // Skip "Custom" option
+
+      const refclkValue = parseFloat(option.value);
+
+      // Show option if no protocol selected, or if refclk is in protocol's list
+      const isCompatible = !validRefclks || validRefclks.includes(refclkValue);
+
+      option.style.display = isCompatible ? '' : 'none';
+      option.disabled = !isCompatible;
+    });
+
+    // If current selection is now hidden, reset to Custom (unless it matches protocol)
+    if (currentValue && validRefclks) {
+      const currentRefclk = parseFloat(currentValue);
+      if (!validRefclks.includes(currentRefclk)) {
+        // Auto-select the first valid refclk for this protocol
+        refclkSelect.value = validRefclks[0].toString();
+        if (refclkSelect.value) {
+          this.elements.refclk.value = refclkSelect.value;
+        } else {
+          refclkSelect.value = ''; // Custom if not in dropdown
+        }
+      }
+    }
   },
 
   calculate() {
@@ -1100,11 +1181,14 @@ const SerdesCalc = {
   },
 
   setState(state) {
-    if (state.linerate !== undefined) this.elements.linerate.value = state.linerate;
-    if (state.refclk !== undefined) this.elements.refclk.value = state.refclk;
     if (state.gttype !== undefined) this.elements.gttype.value = state.gttype;
     if (state.protocol !== undefined) this.elements.protocol.value = state.protocol;
+    if (state.linerate !== undefined) this.elements.linerate.value = state.linerate;
+    if (state.refclk !== undefined) this.elements.refclk.value = state.refclk;
     if (state.refclkpreset !== undefined) this.elements.refclkPreset.value = state.refclkpreset;
+    // Update filters after restoring state
+    this.updateProtocolOptions();
+    this.updateRefclkOptions();
     this.calculate();
   }
 };
