@@ -19,6 +19,7 @@
     <button class="tab" data-calc="fixedpoint" role="tab" aria-selected="false" aria-controls="fixedpoint">Fixed-Point</button>
     <button class="tab" data-calc="pll" role="tab" aria-selected="false" aria-controls="pll">PLL Config</button>
     <button class="tab" data-calc="serdes" role="tab" aria-selected="false" aria-controls="serdes">SerDes Line Rate</button>
+    <button class="tab" data-calc="membw" role="tab" aria-selected="false" aria-controls="membw">Memory BW</button>
   </nav>
 
   <main>
@@ -1093,6 +1094,323 @@
         <code>QPLL: Line_Rate = RefClk × N / (M × D)</code>
       </div>
     </section>
+
+    <!-- Memory Bandwidth Calculator -->
+    <section id="membw" class="calculator">
+      <div class="calc-header">
+        <div>
+          <h2>Memory Bandwidth Calculator</h2>
+          <p class="description">Calculate effective DDR bandwidth with efficiency breakdown</p>
+        </div>
+        <button class="reset-btn" data-calc="membw">Reset</button>
+      </div>
+
+      <div class="inputs">
+        <div class="input-group">
+          <label for="mem-ddrgen">
+            DDR Generation
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>DDR Generation</h4>
+                <p><strong>What:</strong> The memory technology standard (DDR3/4/5 or low-power variants).</p>
+                <p><strong>Why it matters:</strong> Each generation has different refresh overhead, bank count, and burst length - all affecting efficiency.</p>
+                <p><strong>How to find:</strong> Check your DIMM label (e.g., "DDR4-3200") or FPGA board datasheet.</p>
+                <p><strong>Key differences:</strong><span class="tip-list"><br>
+                  - DDR4: Standard desktop/server, 16 banks, ~4.5% refresh<br>
+                  - DDR5: Newer, 32 banks, ~7.6% refresh<br>
+                  - LPDDR4/5: Mobile/embedded, per-bank refresh</span></p>
+              </span>
+            </span>
+          </label>
+          <select id="mem-ddrgen">
+            <option value="ddr3">DDR3</option>
+            <option value="ddr4" selected>DDR4</option>
+            <option value="ddr5">DDR5</option>
+            <option value="lpddr4">LPDDR4</option>
+            <option value="lpddr5">LPDDR5</option>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label for="mem-datarate">
+            Data Rate (MT/s)
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Data Rate</h4>
+                <p><strong>What:</strong> Memory transfer rate in megatransfers per second. The number after "DDR4-" in the memory name.</p>
+                <p><strong>Why:</strong> Directly determines peak bandwidth. Higher rates do not affect efficiency percentage.</p>
+                <p><strong>How to find:</strong> Look at memory part number (e.g., DDR4-3200 = 3200 MT/s).</p>
+                <p><strong>Common values:</strong><span class="tip-list"><br>
+                  - DDR4: 2133, 2400, 2666, 2933, 3200 MT/s<br>
+                  - DDR5: 4800, 5600, 6400, 7200, 8800 MT/s</span></p>
+              </span>
+            </span>
+          </label>
+          <input type="number" id="mem-datarate" value="3200" min="800" step="100">
+        </div>
+
+        <div class="input-group">
+          <label for="mem-buswidth">
+            Bus Width (bits)
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Bus Width</h4>
+                <p><strong>What:</strong> Width of the data bus between memory controller and DRAM.</p>
+                <p><strong>Why:</strong> Wider bus = more data per transfer = higher peak bandwidth.</p>
+                <p><strong>Common values:</strong><span class="tip-list"><br>
+                  - 32-bit: Single LPDDR channel, some embedded FPGAs<br>
+                  - 64-bit: Standard single-channel desktop/server<br>
+                  - 72-bit: 64-bit + 8-bit ECC (server memory)<br>
+                  - 128-bit: Dual channel (2x 64-bit)</span></p>
+              </span>
+            </span>
+          </label>
+          <select id="mem-buswidth">
+            <option value="32">32-bit</option>
+            <option value="64" selected>64-bit</option>
+            <option value="72">72-bit (with ECC)</option>
+            <option value="128">128-bit (dual channel)</option>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label for="mem-ranks">
+            Number of Ranks
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Number of Ranks</h4>
+                <p><strong>What:</strong> Independent sets of DRAM chips sharing the data bus. Multiple ranks allow overlapping operations.</p>
+                <p><strong>Why:</strong> More ranks = better interleaving = ~2% efficiency bonus.</p>
+                <p><strong>How to find:</strong> Single-sided DIMMs: 1 rank. Double-sided: often 2 ranks. Server DIMMs may have 4.</p>
+              </span>
+            </span>
+          </label>
+          <select id="mem-ranks">
+            <option value="1" selected>1 Rank</option>
+            <option value="2">2 Ranks</option>
+            <option value="4">4 Ranks</option>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label for="mem-burstlen">
+            Burst Length
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Burst Length</h4>
+                <p><strong>What:</strong> Number of consecutive data transfers per memory access command.</p>
+                <p><strong>Why:</strong> Longer bursts amortize row access overhead over more data.</p>
+                <p><strong>Typical values:</strong><span class="tip-list"><br>
+                  - BL4: 32 bytes (DDR4 chop mode)<br>
+                  - BL8: 64 bytes (DDR4 standard, matches cache line)<br>
+                  - BL16: 128 bytes (DDR5 standard)</span></p>
+              </span>
+            </span>
+          </label>
+          <select id="mem-burstlen">
+            <option value="4">BL4</option>
+            <option value="8" selected>BL8 (DDR4 default)</option>
+            <option value="16">BL16 (DDR5 default)</option>
+          </select>
+        </div>
+
+        <div class="input-group">
+          <label for="mem-pagehit">
+            Page Hit Rate (%)
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Page Hit Rate (Row Buffer Hit Rate)</h4>
+                <p><strong>What:</strong> Percentage of accesses where the target row is already open.</p>
+                <p><strong>Why:</strong> This is the BIGGEST efficiency factor. Page miss costs ~27ns extra.</p>
+                <p><strong>How to estimate:</strong><span class="tip-list"><br>
+                  - 90-99%: Sequential streaming (video, STREAM benchmark)<br>
+                  - 75-85%: Well-optimized workloads with locality<br>
+                  - 50-70%: Mixed workloads, multiple access streams<br>
+                  - 20-40%: Random access, pointer chasing<br>
+                  - &lt;20%: Pathological patterns</span></p>
+              </span>
+            </span>
+          </label>
+          <input type="number" id="mem-pagehit" value="80" min="0" max="100" step="5">
+        </div>
+
+        <div class="input-group">
+          <label for="mem-rwratio">
+            Read Ratio (%)
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Read/Write Ratio</h4>
+                <p><strong>What:</strong> Percentage of accesses that are reads (vs writes).</p>
+                <p><strong>Why:</strong> Switching between reads and writes requires turnaround time (~5-10ns).</p>
+                <p><strong>How to estimate:</strong><span class="tip-list"><br>
+                  - 100%: Read-only (video decode, ML inference)<br>
+                  - 70-80%: Typical application workloads<br>
+                  - 50%: Balanced (MAXIMUM turnaround overhead)<br>
+                  - 30-40%: Write-heavy (ML training, logging)</span></p>
+                <p><strong>Key insight:</strong> 50% R/W is the worst case (~8% bandwidth loss).</p>
+              </span>
+            </span>
+          </label>
+          <input type="number" id="mem-rwratio" value="70" min="0" max="100" step="5">
+        </div>
+
+        <div class="input-group">
+          <label for="mem-controller">
+            Controller Quality
+            <span class="help-wrapper">
+              <span class="help-icon">?</span>
+              <span class="help-tooltip">
+                <h4>Memory Controller Quality</h4>
+                <p><strong>What:</strong> How sophisticated is your memory controller at scheduling commands?</p>
+                <p><strong>Why:</strong> A good controller reorders commands to maximize bank parallelism. This can swing efficiency by 12%.</p>
+                <p><strong>How to choose:</strong><span class="tip-list"><br>
+                  - <strong>FPGA Basic:</strong> Xilinx/Intel MIG with default settings<br>
+                  - <strong>FPGA Optimized:</strong> MIG with bank-aware mapping, command reordering<br>
+                  - <strong>Desktop:</strong> Intel/AMD consumer CPU controller<br>
+                  - <strong>Server:</strong> Xeon/EPYC server-grade controller</span></p>
+              </span>
+            </span>
+          </label>
+          <select id="mem-controller">
+            <option value="fpgaBasic">FPGA Basic (0.85x)</option>
+            <option value="fpgaOptimized">FPGA Optimized (0.92x)</option>
+            <option value="desktop" selected>Desktop (0.94x)</option>
+            <option value="server">Server (0.97x)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Workload Presets -->
+      <div class="workload-presets">
+        <label>Quick Presets:</label>
+        <div class="preset-buttons">
+          <button type="button" class="preset-btn" data-preset="stream" title="STREAM benchmark: sequential reads, very high page hit rate">
+            STREAM
+          </button>
+          <button type="button" class="preset-btn" data-preset="video" title="Video processing: sequential access, read-heavy">
+            Video
+          </button>
+          <button type="button" class="preset-btn" data-preset="database" title="Database OLTP: mixed access patterns">
+            Database
+          </button>
+          <button type="button" class="preset-btn" data-preset="ml-inference" title="ML Inference: read-heavy, good locality">
+            ML Inference
+          </button>
+          <button type="button" class="preset-btn" data-preset="ml-training" title="ML Training: write-heavy, large batches">
+            ML Training
+          </button>
+          <button type="button" class="preset-btn" data-preset="random" title="Random access: worst-case pattern">
+            Random
+          </button>
+        </div>
+      </div>
+
+      <!-- Advanced timing inputs (collapsible) -->
+      <details class="advanced-timing">
+        <summary>Advanced Timing Parameters</summary>
+        <p class="advanced-intro">Override JEDEC defaults with specific values from your memory datasheet.</p>
+        <div class="inputs">
+          <div class="input-group">
+            <label for="mem-trfc">
+              tRFC (ns)
+              <span class="help-wrapper">
+                <span class="help-icon">?</span>
+                <span class="help-tooltip">
+                  <h4>tRFC - Refresh Cycle Time</h4>
+                  <p><strong>What:</strong> Time for one refresh operation to complete.</p>
+                  <p><strong>Impact:</strong> Directly determines refresh overhead: tRFC / tREFI = % bandwidth lost.</p>
+                  <p><strong>Typical:</strong> DDR4: 260-550ns, DDR5: 295-410ns</p>
+                </span>
+              </span>
+            </label>
+            <input type="number" id="mem-trfc" placeholder="350" step="1">
+          </div>
+          <div class="input-group">
+            <label for="mem-trefi">
+              tREFI (ns)
+              <span class="help-wrapper">
+                <span class="help-icon">?</span>
+                <span class="help-tooltip">
+                  <h4>tREFI - Refresh Interval</h4>
+                  <p><strong>What:</strong> Time between refresh commands.</p>
+                  <p><strong>Values:</strong> DDR4: 7800ns (7.8us), DDR5: 3900ns (3.9us)</p>
+                </span>
+              </span>
+            </label>
+            <input type="number" id="mem-trefi" placeholder="7800" step="100">
+          </div>
+          <div class="input-group">
+            <label for="mem-trcd">
+              tRCD (ns)
+              <span class="help-wrapper">
+                <span class="help-icon">?</span>
+                <span class="help-tooltip">
+                  <h4>tRCD - RAS to CAS Delay</h4>
+                  <p><strong>What:</strong> Time from row activation until column access can begin.</p>
+                  <p><strong>Impact:</strong> Adds to page miss penalty.</p>
+                </span>
+              </span>
+            </label>
+            <input type="number" id="mem-trcd" placeholder="13.75" step="0.25">
+          </div>
+          <div class="input-group">
+            <label for="mem-trp">
+              tRP (ns)
+              <span class="help-wrapper">
+                <span class="help-icon">?</span>
+                <span class="help-tooltip">
+                  <h4>tRP - Row Precharge Time</h4>
+                  <p><strong>What:</strong> Time to close a row before opening a different row.</p>
+                  <p><strong>Impact:</strong> Page miss cost = tRP + tRCD.</p>
+                </span>
+              </span>
+            </label>
+            <input type="number" id="mem-trp" placeholder="13.75" step="0.25">
+          </div>
+        </div>
+        <p class="advanced-note">Leave blank to use JEDEC-standard defaults for the selected DDR generation.</p>
+      </details>
+
+      <div class="results" id="mem-results-container" aria-live="polite">
+        <div class="results-header">
+          <h3>Bandwidth Analysis</h3>
+          <button class="copy-btn" data-calc="membw">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            Copy
+          </button>
+        </div>
+        <div id="mem-results" class="mem-results">
+          <p class="placeholder">Enter values to calculate...</p>
+        </div>
+      </div>
+
+      <div class="formula">
+        <h3>
+          Formula
+          <span class="help-wrapper">
+            <span class="help-icon">?</span>
+            <span class="help-tooltip">
+              <h4>Memory Bandwidth Formulas</h4>
+              <p><strong>Peak:</strong> Data_Rate x Bus_Width / 8 / 1000 = GB/s</p>
+              <p><strong>Efficiency factors:</strong> Refresh overhead, page miss penalty, R/W turnaround, controller quality.</p>
+              <p><strong>Model:</strong> Calibrated against STREAM benchmarks, Xilinx MIG measurements, and academic research.</p>
+            </span>
+          </span>
+        </h3>
+        <code>Peak_BW = Data_Rate x Bus_Width / 8 / 1000</code><br>
+        <code>Effective_BW = Peak_BW x Efficiency</code>
+      </div>
+    </section>
   </main>
 
   <footer>
@@ -1106,6 +1424,7 @@
   <script src="js/fixedpoint.js"></script>
   <script src="js/pll.js"></script>
   <script src="js/serdes.js"></script>
+  <script src="js/membw.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>

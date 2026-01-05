@@ -663,6 +663,365 @@ footer a:hover {
   font-size: 0.75rem;
 }
 
+/* Memory Bandwidth Calculator Results */
+.mem-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  background: var(--bg-lighter);
+  border-radius: 4px;
+}
+
+.mem-peak,
+.mem-effective {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.mem-summary .label {
+  font-weight: 500;
+  color: var(--text);
+  min-width: 140px;
+}
+
+.mem-summary .value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-bright);
+}
+
+.mem-effective .efficiency {
+  font-size: 0.9rem;
+  color: var(--accent);
+}
+
+/* Secondary outputs (data per burst, transactions, etc.) */
+.mem-secondary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: var(--bg-lighter);
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+.secondary-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.secondary-item .label {
+  font-size: 0.8rem;
+  color: var(--text);
+  opacity: 0.7;
+}
+
+.secondary-item .value {
+  font-weight: 500;
+  color: var(--text-bright);
+}
+
+/* Breakdown table */
+.mem-results h4 {
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 1.5rem 0 0.75rem;
+}
+
+.breakdown-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.breakdown-table th,
+.breakdown-table td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+.breakdown-table th {
+  font-weight: 400;
+  color: var(--text);
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+}
+
+.breakdown-table td {
+  color: var(--text-bright);
+}
+
+.breakdown-table .loss {
+  color: var(--error);
+}
+
+.breakdown-table .gain {
+  color: var(--accent);
+}
+
+.breakdown-table .note {
+  font-size: 0.8rem;
+  color: var(--text);
+  opacity: 0.7;
+}
+
+.breakdown-table tr.subtotal td {
+  border-top: 2px solid var(--border);
+  font-weight: 500;
+}
+
+.breakdown-table tr.final-row td {
+  border-top: 2px solid var(--border);
+  font-weight: 600;
+  background: var(--bg-lighter);
+}
+
+.breakdown-table .final {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* Advanced timing collapsible */
+.advanced-timing {
+  margin-top: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.advanced-timing summary {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.advanced-timing summary:hover {
+  color: var(--text-bright);
+}
+
+.advanced-timing[open] summary {
+  border-bottom: 1px solid var(--border);
+}
+
+.advanced-timing .inputs {
+  padding: 1rem;
+  margin-bottom: 0;
+}
+
+.advanced-note {
+  padding: 0 1rem 1rem;
+  font-size: 0.85rem;
+  color: var(--text);
+  opacity: 0.7;
+  font-style: italic;
+  margin: 0;
+}
+
+.advanced-intro {
+  padding: 0.75rem 1rem 0;
+  font-size: 0.85rem;
+  color: var(--text);
+  margin: 0;
+}
+
+/* Workload preset buttons */
+.workload-presets {
+  margin: 1rem 0;
+  padding: 1rem;
+  background: var(--bg-light);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--accent-dim);
+}
+
+.workload-presets > label {
+  display: block;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+  color: var(--text);
+}
+
+.preset-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.preset-btn {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.85rem;
+  font-family: inherit;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.preset-btn:hover {
+  background: var(--accent-dim);
+  color: var(--bg);
+  border-color: var(--accent);
+}
+
+.preset-btn:active {
+  transform: scale(0.98);
+}
+
+/* Visual feedback when preset is applied */
+.preset-applied {
+  animation: preset-flash 0.5s ease;
+}
+
+@keyframes preset-flash {
+  0% { background-color: var(--accent-dim); }
+  100% { background-color: transparent; }
+}
+
+/* Input validation states */
+.input-error {
+  border-color: var(--error) !important;
+  box-shadow: 0 0 0 2px rgba(255, 68, 68, 0.2);
+}
+
+.validation-errors {
+  background: rgba(255, 68, 68, 0.1);
+  border: 1px solid var(--error);
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.error-message {
+  color: var(--error);
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.validation-warnings {
+  background: rgba(255, 170, 0, 0.1);
+  border: 1px solid var(--warning);
+  border-radius: 4px;
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.warning-message {
+  color: var(--warning);
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* Guidance/recommendations section */
+.guidance-section {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: var(--bg-lighter);
+  border-radius: 4px;
+  border-left: 3px solid var(--accent-dim);
+}
+
+.guidance-section h4 {
+  margin: 0 0 0.75rem 0;
+  color: var(--text-bright);
+  font-size: 0.85rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.guidance-section .rating {
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  margin-bottom: 0.75rem;
+  font-weight: 500;
+}
+
+.guidance-section .rating.good {
+  background: rgba(0, 255, 136, 0.15);
+  color: var(--accent);
+}
+
+.guidance-section .rating.okay {
+  background: rgba(59, 130, 246, 0.15);
+  color: #3b82f6;
+}
+
+.guidance-section .rating.warning {
+  background: rgba(255, 170, 0, 0.15);
+  color: var(--warning);
+}
+
+.guidance-section .rating.poor {
+  background: rgba(255, 68, 68, 0.15);
+  color: var(--error);
+}
+
+.guidance-tip {
+  margin: 0.5rem 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.guidance-tip summary {
+  padding: 0.5rem 0.75rem;
+  cursor: pointer;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.guidance-tip summary:hover {
+  background: var(--bg-light);
+}
+
+.guidance-tip[open] summary {
+  border-bottom: 1px solid var(--border);
+}
+
+.guidance-tip ul {
+  margin: 0;
+  padding: 0.75rem 1rem 0.75rem 2rem;
+  font-size: 0.9rem;
+}
+
+.guidance-tip li {
+  margin-bottom: 0.4rem;
+  color: var(--text);
+}
+
+/* Input group select styling for memory bandwidth */
+.input-group select {
+  background: var(--bg-light);
+  border: 1px solid var(--border);
+  color: var(--text-bright);
+  padding: 0.5rem;
+  font-family: inherit;
+  font-size: 1rem;
+  width: 100%;
+  cursor: pointer;
+}
+
+.input-group select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.input-group select option {
+  background: var(--bg);
+  color: var(--text-bright);
+}
+
 /* Mobile adjustments */
 @media (max-width: 600px) {
   body {
@@ -696,5 +1055,19 @@ footer a:hover {
 
   .preset-selector select {
     max-width: none;
+  }
+
+  /* Memory bandwidth mobile */
+  .mem-secondary {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .preset-buttons {
+    gap: 0.3rem;
+  }
+
+  .preset-btn {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.75rem;
   }
 }
