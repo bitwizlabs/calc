@@ -71,7 +71,7 @@ Find valid PLL configurations for target frequency.
 
 ## Tech Stack
 
-- Vanilla HTML/CSS/JS (like wiki_rabbit_hole)
+- Vanilla HTML/CSS/JS
 - Single page, all calculators accessible via tabs or sections
 - No build step, no frameworks
 - Mobile responsive
